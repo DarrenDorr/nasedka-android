@@ -35,6 +35,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -44,6 +45,8 @@ public final class MainActivity extends Activity {
     private static final DateTimeFormatter SHORT = DateTimeFormatter.ofPattern("dd.MM, HH:mm", new Locale("ru"));
     private static final DateTimeFormatter FULL = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm", new Locale("ru"));
     private static final int REQUEST_EXPORT = 77;
+    private static final int TAB_FARM = 0, TAB_INCUBATION = 1, TAB_JOURNAL = 2;
+    private static final int TAB_NEWS = 3, TAB_SETTINGS = 4, TAB_GUIDES = 5;
     private final ZoneId zone = ZoneId.systemDefault();
     private LinearLayout root;
     private LinearLayout body;
@@ -94,13 +97,14 @@ public final class MainActivity extends Activity {
     private void fromIntent(Intent intent) {
         if (intent != null && intent.hasExtra("batch_id")) {
             selectedBatch = intent.getLongExtra("batch_id", -1);
-            tab = 0;
+            tab = TAB_INCUBATION;
         }
     }
 
     @Override public void onBackPressed() {
-        if (selectedBatch > 0) { selectedBatch = -1; render(); }
-        else if (tab != 0) { tab = 0; render(); }
+        if (selectedBatch > 0) { selectedBatch = -1; tab = TAB_INCUBATION; render(); }
+        else if (tab == TAB_GUIDES) { tab = TAB_INCUBATION; render(); }
+        else if (tab != TAB_FARM) { tab = TAB_FARM; render(); }
         else super.onBackPressed();
     }
 
@@ -110,7 +114,7 @@ public final class MainActivity extends Activity {
             if (force) toast(message);
         });
         RemoteFeed.refreshNews(this, force, message -> {
-            if (body != null && tab == 3) render();
+            if (body != null && tab == TAB_NEWS) render();
             if (force) toast(message);
         });
     }
@@ -119,22 +123,24 @@ public final class MainActivity extends Activity {
         if (body == null) return;
         body.removeAllViews();
         bottom.removeAllViews();
-        if (selectedBatch > 0 && tab == 0) showDetails();
-        else if (tab == 0) showHome();
-        else if (tab == 1) showJournal();
-        else if (tab == 2) showGuides();
-        else if (tab == 3) showNews();
+        if (selectedBatch > 0 && tab == TAB_INCUBATION) showDetails();
+        else if (tab == TAB_FARM) showFarmHome();
+        else if (tab == TAB_INCUBATION) showIncubationHome();
+        else if (tab == TAB_JOURNAL) showJournal();
+        else if (tab == TAB_NEWS) showNews();
+        else if (tab == TAB_GUIDES) showGuides();
         else showSettings();
         navigation();
     }
 
     private void navigation() {
-        String[] names = {"Закладки", "Журнал", "Подсказки", "Новости", "Настройки"};
+        String[] names = {"Главная", "Инкубация", "Журнал", "Новости", "Настройки"};
         for (int i = 0; i < names.length; i++) {
             int index = i;
-            TextView item = Ui.text(this, names[i], 11, tab == i ? Ui.GREEN : Ui.MUTED, tab == i);
+            boolean selected = tab == i || (tab == TAB_GUIDES && i == TAB_INCUBATION);
+            TextView item = Ui.text(this, names[i], 11, selected ? Ui.GREEN : Ui.MUTED, selected);
             item.setGravity(Gravity.CENTER); item.setMinHeight(Ui.dp(this, 44));
-            item.setBackground(Ui.bg(tab == i ? 0xFFE9F5EB : Color.WHITE, 12, 0, 0, this));
+            item.setBackground(Ui.bg(selected ? 0xFFE9F5EB : Color.WHITE, 12, 0, 0, this));
             bottom.addView(item, new LinearLayout.LayoutParams(0, -2, 1));
             item.setClickable(true); item.setFocusable(true);
             item.setOnClickListener(v -> { tab = index; selectedBatch = -1; render(); });
@@ -169,19 +175,117 @@ public final class MainActivity extends Activity {
 
     private List<Batch> all() { try (Db db = new Db(this)) { return db.allBatches(); } }
 
-    private void showHome() {
-        title("Наседка", "Спокойная инкубация, день за днём");
+    private void showFarmHome() {
+        title("Наседка", "Моё хозяйство · всё важное в одном месте");
+        List<Batch> batches = all();
+        int active = FarmOverview.activeCount(batches);
+        int eggs = FarmOverview.eggsInActiveIncubations(batches);
+        LinearLayout hero = Ui.card(this);
+        hero.setBackground(Ui.bg(0xFFE3F0E6, 20, 0, 0, this));
+        Ui.addMargin(hero, Ui.text(this, "МОЁ ХОЗЯЙСТВО", 12, Ui.GREEN, true), this, 7);
+        Ui.addMargin(hero, Ui.text(this, active == 0 ? "Начнём с инкубации"
+                : "Активных инкубаций: " + active, 23, Ui.DARK, true), this, 9);
+        Ui.addMargin(hero, Ui.text(this, active == 0
+                ? "Добавьте первую закладку, и здесь появятся ближайшие действия."
+                : "Яиц в активных закладках: " + eggs
+                    + ". Это не количество птиц в хозяйстве.", 14, Ui.MUTED, false), this, 13);
+        hero.addView(button("Перейти к инкубации", true, () -> { tab = TAB_INCUBATION; render(); }));
+        Ui.addMargin(body, hero, this, 14);
+
+        if (!Prefs.notifications(this) || !hasNotificationPermission()) {
+            LinearLayout warning = Ui.card(this);
+            Ui.addMargin(warning, Ui.text(this, "Напоминания требуют настройки",
+                    16, Ui.AMBER, true), this, 8);
+            Ui.addMargin(warning, Ui.text(this, "Проверьте разрешение уведомлений.",
+                    14, Ui.MUTED, false), this, 10);
+            warning.addView(button("Открыть настройки", false, () -> { tab = TAB_SETTINGS; render(); }));
+            Ui.addMargin(body, warning, this, 12);
+        }
+
+        section("Разделы хозяйства");
+        LinearLayout incubation = Ui.card(this);
+        Ui.addMargin(incubation, Ui.text(this, "Инкубация яиц", 18, Ui.DARK, true), this, 8);
+        Ui.addMargin(incubation, Ui.text(this,
+                "Закладки, дневник, измерения и контрольные даты.",
+                14, Ui.MUTED, false), this, 11);
+        incubation.addView(button("Открыть раздел", false, () -> { tab = TAB_INCUBATION; render(); }));
+        Ui.addMargin(body, incubation, this, 10);
+        futureFarmCard("Поголовье", "Учёт птицы, возрастных групп и молодняка.");
+        futureFarmCard("Корма и запасы", "Покупки кормов, остатки и расход.");
+        futureFarmCard("Доходы и расходы", "Затраты, продажи и итоги за период.");
+        futureFarmCard("Отчёты", "Статистика по птице и хозяйству.");
+
+        section("Ближайшие действия");
+        long now = System.currentTimeMillis();
+        List<Reminder> candidates = new ArrayList<>();
+        Set<String> completed = new HashSet<>();
+        try (Db db = new Db(this)) {
+            for (Batch b : batches) if (b.active) {
+                completed.addAll(db.doneKeys(b.id));
+                candidates.addAll(AlarmScheduler.plan(this, b));
+            }
+        } catch (IllegalArgumentException badSettings) {
+            Ui.addMargin(body, Ui.text(this, "Ошибка времени напоминаний: "
+                    + badSettings.getMessage(), 14, Ui.AMBER, false), this, 12);
+            return;
+        }
+        List<Reminder> upcoming = FarmOverview.nextActions(candidates, completed, now, 4);
+        if (upcoming.isEmpty()) Ui.addMargin(body, Ui.text(this, active == 0
+                ? "Пока нет активных инкубаций."
+                : "В ближайшие двое суток незавершённых действий нет.",
+                14, Ui.MUTED, false), this, 12);
+        for (Reminder r : upcoming) {
+            LinearLayout task = Ui.card(this);
+            Ui.addMargin(task, Ui.text(this,
+                    (r.at < now ? "ТРЕБУЕТ ВНИМАНИЯ · " : "ЗАПЛАНИРОВАНО · ") + format(r.at),
+                    12, r.at < now ? Ui.AMBER : Ui.GREEN, true), this, 6);
+            Ui.addMargin(task, Ui.text(this, r.title, 15, Ui.DARK, true), this, 10);
+            task.addView(button("Открыть закладку", false, () -> {
+                tab = TAB_INCUBATION; selectedBatch = r.batchId; render();
+            }));
+            Ui.addMargin(body, task, this, 10);
+        }
+        Ui.addMargin(body, Ui.text(this,
+                "Пока здесь отображаются только задачи инкубации.",
+                12, Ui.MUTED, false), this, 10);
+    }
+
+    private void futureFarmCard(String heading, String description) {
+        LinearLayout card = Ui.card(this);
+        Ui.addMargin(card, Ui.text(this, heading + " · В разработке",
+                16, Ui.DARK, true), this, 7);
+        card.addView(Ui.text(this, description, 13, Ui.MUTED, false));
+        Ui.addMargin(body, card, this, 9);
+    }
+
+    private void showIncubationHome() {
+        title("Инкубация", "Выберите способ или откройте существующую закладку");
+        LinearLayout choices = Ui.card(this);
+        Ui.addMargin(choices, Ui.text(this, "Способ инкубации", 18, Ui.DARK, true), this, 8);
+        Ui.addMargin(choices, Ui.text(this,
+                "В инкубаторе — действующий сценарий. Уход под наседкой добавим отдельно.",
+                13, Ui.MUTED, false), this, 12);
+        Ui.addMargin(choices, button("В инкубаторе · новая закладка",
+                true, () -> editBatch(null)), this, 9);
+        choices.addView(button("Под наседкой · в разработке", false, () ->
+                new AlertDialog.Builder(this)
+                        .setTitle("Естественное насиживание")
+                        .setMessage("Отдельный дневник и подсказки по уходу за наседкой "
+                                + "будут реализованы следующим этапом. "
+                                + "Пока нельзя создавать такую закладку как инкубаторную.")
+                        .setPositiveButton("Понятно", null).show()));
+        Ui.addMargin(body, choices, this, 13);
         List<Batch> batches = all();
         long count = batches.stream().filter(b -> b.active).count();
         LinearLayout hero = Ui.card(this);
         hero.setBackground(Ui.bg(0xFFE3F0E6, 20, 0, 0, this));
-        Ui.addMargin(hero, Ui.text(this, "ВАШ ИНКУБАТОР", 12, Ui.GREEN, true), this, 7);
+        Ui.addMargin(hero, Ui.text(this, "ТЕКУЩИЕ ЗАКЛАДКИ", 12, Ui.GREEN, true), this, 7);
         Ui.addMargin(hero, Ui.text(this, count + " активных закладок", 24, Ui.DARK, true), this, 8);
         Ui.addMargin(hero, Ui.text(this,
                 count == 0 ? "Добавьте первую закладку — календарь напоминаний появится автоматически."
                            : "Контроль условий, события и записи собраны в одном месте.",
                 14, Ui.MUTED, false), this, 15);
-        hero.addView(button("+ Новая закладка", true, () -> editBatch(null)));
+        hero.addView(button("Подсказки по «Несушке»", false, () -> { tab = TAB_GUIDES; render(); }));
         Ui.addMargin(body, hero, this, 14);
         if (RemoteFeed.hasUpdate(this)) {
             LinearLayout upgrade = Ui.card(this);
@@ -237,7 +341,7 @@ public final class MainActivity extends Activity {
     private void showDetails() {
         Batch b;
         try (Db db = new Db(this)) { b = db.batch(selectedBatch); }
-        if (b == null) {selectedBatch=-1;showHome();return;}
+        if (b == null) {selectedBatch=-1;showIncubationHome();return;}
         Ui.addMargin(body, button("← Все закладки", false, () -> {selectedBatch = -1;render();}), this, 14);
         title(b.name, b.species + " • " + b.eggs + " яиц");
         LinearLayout hero = Ui.card(this);
@@ -392,6 +496,7 @@ public final class MainActivity extends Activity {
     }
 
     private void showGuides() {
+        Ui.addMargin(body, button("← К инкубации", false, () -> { tab = TAB_INCUBATION; render(); }), this, 12);
         title("Понятные подсказки", "Основа — руководство инкубатора «Несушка»");
         guideCard("1. Установите инкубатор",
                 "Обеспечьте приток воздуха, исключите сквозняки и прямое солнце. Температура помещения — желательно 20–25 °C, недопустимо ниже 18 или выше 28 °C. Не ставьте на пол.", "Инструкция · стр. 1");
@@ -424,7 +529,7 @@ public final class MainActivity extends Activity {
         }
         Ui.space(body,this,6);
         Ui.addMargin(body, button("Обновить новости", false, () -> refreshRemote(true)), this, 9);
-        Ui.addMargin(body,Ui.text(this,"Новости загружаются из открытого GitHub-репозитория (когда он будет настроен). Последняя полученная лента доступна без интернета. Реклама в новостях пока не включена.",12,Ui.MUTED,false),this,10);
+        Ui.addMargin(body,Ui.text(this,"Новости загружаются из официального открытого GitHub-репозитория. Последняя полученная лента доступна без интернета. Реклама в новостях пока не включена.",12,Ui.MUTED,false),this,10);
     }
 
     private void settingBlock(String title, String value, Runnable action) {
@@ -727,7 +832,7 @@ public final class MainActivity extends Activity {
                 b.duration=days; b.startedAt=start.getTimeInMillis(); b.targetTemp=target;
                 b.manualTurn=manual.isChecked(); b.spray=b.isNesushka() && spray.isChecked() && (Batch.DUCK.equals(b.species)||Batch.GOOSE.equals(b.species));
                 try (Db db = new Db(this)) { db.saveBatch(b); }
-                selectedBatch=b.id; tab=0;
+                selectedBatch=b.id; tab=TAB_INCUBATION;
                 AlarmScheduler.reschedule(this); dialog.dismiss(); render();
             } catch (IllegalArgumentException error) {
                 new AlertDialog.Builder(this).setMessage(error.getMessage() == null ? "Проверьте введённые числа." : error.getMessage()).setPositiveButton("Понятно", null).show();
