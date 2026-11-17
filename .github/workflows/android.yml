@@ -21,10 +21,15 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Android SDK
-        uses: android-actions/setup-android@v3
-      - name: Install SDK platform
-        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+      - name: Install Android SDK platform (runner SDK)
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${ANDROID_HOME:?ANDROID_HOME is not set on runner}"
+          sdkmanager_path="$(find "$ANDROID_HOME/cmdline-tools" -type f -path '*/bin/sdkmanager' | sort -V | tail -n 1)"
+          test -n "$sdkmanager_path"
+          echo "SDK manager: $sdkmanager_path"
+          "$sdkmanager_path" --install 'platforms;android-36' 'build-tools;35.0.0'
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
