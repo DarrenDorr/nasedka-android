@@ -488,7 +488,7 @@ public final class MainActivity extends Activity {
         Ui.addMargin(alerts, button("Настроить звук проверок", false,
                 () -> openChannelSettings(Notifications.CH_DAILY)), this, 8);
         alerts.addView(button("Открыть настройки уведомлений телефона", false, () -> {
-            try { startActivity(new Intent(Settings.ACTION_NOTIFICATION_SETTINGS)); }
+            try { Intent i = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS); i.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName()); startActivity(i); }
             catch (ActivityNotFoundException e) {
                 toast("Найдите раздел «Уведомления» в настройках телефона.");
             }
