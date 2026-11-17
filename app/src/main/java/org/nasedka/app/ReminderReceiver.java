@@ -8,9 +8,21 @@ public final class ReminderReceiver extends BroadcastReceiver {
     public static final String ACTION_FIRE = "org.nasedka.app.FIRE";
     public static final String ACTION_DONE = "org.nasedka.app.DONE";
     public static final String ACTION_SNOOZE = "org.nasedka.app.SNOOZE";
+    public static final String ACTION_TICK = "org.nasedka.app.TICK";
+    public static final String ACTION_TEST = "org.nasedka.app.TEST";
 
     @Override public void onReceive(Context context, Intent intent) {
         if (intent == null) return;
+        String incoming = intent.getAction();
+        if (ACTION_TEST.equals(incoming)) {
+            AlarmScheduler.testReceived(context, intent.getLongExtra("scheduled_at", 0));
+            return;
+        }
+        if (ACTION_TICK.equals(incoming)) {
+            AlarmScheduler.deliverTick(context, intent.getLongExtra("scheduled_at", 0));
+            AlarmScheduler.reschedule(context);
+            return;
+        }
         String key = intent.getStringExtra("key");
         long batch = intent.getLongExtra("batch", -1);
         String type = intent.getStringExtra("type");

@@ -63,6 +63,23 @@ public final class Notifications {
         manager.notify(id(r.key), n);
     }
 
+    public static void test(Context c) {
+        if (Build.VERSION.SDK_INT >= 33 && c.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return;
+        NotificationManager manager = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager == null || !manager.areNotificationsEnabled()) return;
+        Intent open = new Intent(c, MainActivity.class);
+        open.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent content = PendingIntent.getActivity(c, 10001, open,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        Notification notice = new Notification.Builder(c, CH_URGENT)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle("Наседка: тест уведомлений")
+                .setContentText("Сигнал Android получен. Проверьте время в настройках приложения.")
+                .setContentIntent(content).setAutoCancel(true)
+                .setCategory(Notification.CATEGORY_REMINDER).build();
+        manager.notify(10001, notice);
+    }
+
     public static void dismiss(Context c, String key) {
         NotificationManager manager = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (manager != null) manager.cancel(id(key));

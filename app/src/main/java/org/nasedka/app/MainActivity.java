@@ -467,6 +467,42 @@ public final class MainActivity extends Activity {
         });
         n.addView(enabled);
         Ui.addMargin(body, n, this, 12);
+        section("Проверка фоновых уведомлений");
+        LinearLayout test = Ui.card(this);
+        Ui.addMargin(test, Ui.text(this,
+                "Сначала проверьте уведомление сразу, затем назначьте тест через 2 минуты и заблокируйте экран.",
+                14, Ui.MUTED, false), this, 12);
+        Ui.addMargin(test, button("Показать тест сейчас", false, () -> {
+            Notifications.channels(this);
+            Notifications.test(this);
+            toast(hasNotificationPermission() ? "Команда показа отправлена Android." : "Сначала разрешите уведомления.");
+        }), this, 8);
+        Ui.addMargin(test, button("Тест через 2 минуты", true, () -> {
+            try {
+                AlarmScheduler.scheduleTest(this);
+                render();
+                toast("Тест назначен. Заблокируйте экран и не открывайте Наседку 3–5 минут.");
+            } catch (RuntimeException issue) {
+                toast("Не удалось назначить тест: " + issue.getMessage());
+            }
+        }), this, 12);
+        long planned = Prefs.get(this).getLong("diagnostic_test_at", 0);
+        long fired = Prefs.get(this).getLong("diagnostic_test_fired_at", 0);
+        if (planned > 0) {
+            String result = fired > 0 ? ("Получен сигнал: " + format(fired)
+                    + " (задержка " + Math.max(0, (fired - planned) / 1000) + " сек.)")
+                    : ("Ожидается: " + format(planned)
+                    + (System.currentTimeMillis() > planned ? " · время прошло, сигнал пока не зарегистрирован" : ""));
+            Ui.addMargin(test, Ui.text(this, result, 13, fired > 0 ? Ui.GREEN : Ui.MUTED, fired > 0), this, 10);
+        }
+        long late = Prefs.get(this).getLong("last_alarm_lateness_ms", -1);
+        if (late >= 0) Ui.addMargin(test, Ui.text(this,
+                "Последнее напоминание: задержка " + late / 1000 + " сек.", 12, Ui.MUTED, false), this, 7);
+        Ui.addMargin(test, button("Открыть настройки энергосбережения", false, () -> {
+            try { startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)); }
+            catch (ActivityNotFoundException e) { toast("Найдите «Оптимизация батареи» в настройках телефона."); }
+        }), this, 8);
+        Ui.addMargin(body, test, this, 12);
         section("Новости и обновления");
         LinearLayout remote=Ui.card(this);
         Ui.addMargin(remote,Ui.text(this,"Канал: "+RemoteFeed.channel().toUpperCase(Locale.ROOT),15,Ui.DARK,true),this,8);
