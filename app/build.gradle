@@ -1,0 +1,41 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'org.nasedka.app'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'org.nasedka.app'
+        minSdk 26
+        targetSdk 36
+        versionCode 3
+        versionName '0.2.1-dev'
+        testInstrumentationRunner 'android.test.InstrumentationTestRunner'
+    }
+
+    flavorDimensions 'distribution'
+    productFlavors {
+        github { dimension 'distribution' }
+        play { dimension 'distribution' }
+        rustore { dimension 'distribution' }
+    }
+
+    buildTypes {
+        debug { applicationIdSuffix '.debug' }
+    }
+    buildFeatures { buildConfig true }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    testOptions { unitTests.returnDefaultValues = true }
+}
+
+dependencies {
+    githubImplementation 'androidx.core:core:1.15.0'
+    testImplementation 'junit:junit:4.13.2'
+}

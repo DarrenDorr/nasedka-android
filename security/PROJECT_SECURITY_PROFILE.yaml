@@ -1,0 +1,159 @@
+# НАСЕДКА | Project Security Profile v1.0
+# Date: 2026-11-17. Status is a factual confidence label, not a test outcome.
+# No secrets, real user logs, device IDs or private data in this file.
+metadata:
+  product_name: "Наседка"
+  english_reference: "Nasedka"
+  product_category: "Android incubation monitoring assistant"
+  profile_version: "1.0"
+  prepared_at: "2026-11-17"
+  assurance: "HIGH_ASSURANCE_REMINDERS_AND_RELEASE"
+  maturity: "SOURCE_PREPARED_CI_NOT_RUN"
+  owner: "DarrenDorr (GitHub repository owner; legal rights-holder not independently verified)"
+  reference_conversation: "Создание приложения инкубации, 2026-11-17"
+  manual_reference: "incubat_2021.pdf — бытовой инкубатор Несушка, uploaded source"
+  constraints: ["ChatGPT usage policies", "Defensive testing only", "No false assurance of device monitoring"]
+repository:
+  host: "GitHub"
+  visibility: "PUBLIC_CONFIRMED"
+  repository_url: "https://github.com/DarrenDorr/nasedka-android"
+  organization: "DarrenDorr"
+  main_branch: "main"
+  current_commit: "NOT_YET_COMMITTED_AT_PROFILE_GENERATION"
+  license: "Apache-2.0 (confirmed by project owner; third-party licenses and branding to audit)"
+product_scope:
+  core_goal: "Удобный и понятный контроль инкубации яиц посредством календаря, журнала и уведомлений"
+  first_incubator_family: "Несушка (конкретная модификация — VERIFY)"
+  architecture_goal: "Производитель-независимое приложение с расширяемыми профилями инкубаторов"
+  hardware_integration: "NOT_CONFIRMED_DO_NOT_ASSUME"
+  planned_integrations: ["other incubators in future — planned, not implemented"]
+  known_bird_profiles: ["chicken", "duck", "goose", "turkey", "quail"]
+  custom_incubation_duration: "PLANNED"
+  controls: ["batch calendar", "temperature/humidity journal", "manual/automatic turning reminders", "water reminders", "candling reminders", "stop turning", "hatch records"]
+  news_feed: "SOURCE_IMPLEMENTED_UNTESTED_ON_DEVICE"
+  in_app_advertising: "PLANNED_CONSENT_AND_PRIVACY_GATE"
+  publication: ["Google Play", "RuStore", "GitHub open-source releases"]
+  initial_mode: "SOURCE_IMPLEMENTED_UNTESTED_ON_DEVICE"
+  accounts_cloud_sync: "UNKNOWN_NO_ACCOUNT_REQUIREMENT_CONFIRMED"
+  sensors: "NONE_CONFIRMED_PHONE_CANNOT_DIRECTLY_READ_INCUBATOR_VALUES"
+  mains_power_monitoring: "NONE_CONFIRMED_DO_NOT_CLAIM"
+tech:
+  platform: "Android"
+  framework: "Android SDK native views (source exists, Android build not run)"
+  language: "Java 17 (source prepared)"
+  min_sdk: 26
+  target_sdk: "AT_LEAST_36_FOR_NEW_GOOGLE_PLAY_SUBMISSION_AS_OF_2026_11_17_RECHECK_BEFORE_RELEASE"
+  build_tool: "Gradle 8.11.1 / Android Gradle Plugin 8.10.1 (configured, CI not run)"
+  package_id: "org.nasedka.app (reserved in source, not verified in app stores)"
+  flavor_strategy: ["play", "rustore", "github"]
+  keystore_management: "UNKNOWN_HIGH_ASSURANCE"
+  native_code: "UNKNOWN_NO_NATIVE_CODE_ASSUMED"
+  third_party_sdk: ["ads provider UNKNOWN", "consent SDK UNKNOWN", "RuStore update SDK CONDITIONAL"]
+  database: "SQLiteOpenHelper (source prepared, Android runtime not tested)"
+  backend: "NOT_PLANNED_FOR_CORE_REMINDERS_NEWS_UPDATE_HOSTS_ONLY"
+  network_endpoints: ["GitHub release metadata (GitHub flavor)", "news source UNKNOWN", "ad network UNKNOWN (only if enabled)"]
+  bluetooth_wifi_usb_permissions: "NOT_REQUIRED_UNTIL_VERIFIED_HARDWARE_INTEGRATION"
+notifications:
+  significance: "CORE_FUNCTION"
+  android_13_post_notifications: "REQUIRED_RUNTIME_PERMISSION_IF_TARGET_DEVICE_33_PLUS"
+  android_12_14_exact_alarm_restrictions: "MUST_REVIEW_POLICY_ELIGIBILITY_AND_USER_GRANTED_ACCESS"
+  use_exact_alarm: "UNKNOWN_NOT_ASSUMED"
+  use_exact_alarm_permission: "DO_NOT_DECLARE_WITHOUT_ELIGIBILITY_AND_POLICY_REVIEW"
+  alarm_fallback: "INEXACT_OR_OTHER_ALLOWED_SCHEDULING_WITH_DISCLOSED_UNCERTAINTY"
+  background_jobs: "WORKMANAGER_FOR_DEFERRABLE_NOT_EXACT_TIME"
+  scheduled_events: ["temperature_check", "humidity_check", "water_refill", "turn_eggs_if_manual", "inspect_auto_turn_if_automated", "candling", "stop_turning_before_hatch", "hatch_watch", "record_hatch_result"]
+  clock_basis: "UTC_INSTANT_WITH_ZONE_ID_AND_WALL_CLOCK_RULES_TO_DEFINE"
+  multiple_batches: "PLANNED_SUPPORT_IN_DESIGN"
+  schedule_source: "manual_verified_for_specific_model_OR_USER_CUSTOM"
+  time_delivery_guarantee: "NO_GUARANTEE_ON_ALL_ANDROID_DEVICES"
+  postpone_snooze_complete: "PLANNED"
+  stale_notification_handling: "REQUIRED"
+  reboot_timezone_dst_clock_change_rescheduling: "REQUIRED"
+  permission_denied_fallback: "ON_SCREEN_SCHEDULE_AND_CLEAR_EXPLANATION"
+incubator_manual:
+  original: "incubat_2021.pdf"
+  revision: "2021 filename, product-specific document, exact device revision VERIFY"
+  automatic_turn_interval: "CONFLICT_IN_MANUAL: factory setting 4h (p5), automatic turning ~1h footnoted (p6); DO_NOT_ASSUME"
+  temperature_factory_setpoint_c: "38.0 (p5, factory setting only; NOT species-global recommendation)"
+  candling_days: ["7-8", "11-13"]
+  stop_turning: "2 days before planned hatch (manual p6)"
+  water_refill: "about every 3 days (manual p4), dependent on model/humidity"
+  chick_egg_duration_days: 21
+  goose_duration_days: "28-30"
+  duck_duration_days: "28-33"
+  turkey_duration_days: 28
+  quail_duration_days: "15-17"
+  humidity_chicken_percent: "50-55 main; 65-70 final 2 days (manual p5)"
+  humidity_duck_goose_percent: "70-80 at hatch (manual p5)"
+  model_specific_variations: "MUST_NOT_COPY_VALUES_TO_ALL_SPECIES_OR_MODELS"
+updates:
+  check_cadence: "once per 24h while app opened, with manual check and robust offline cache"
+  notify_available_update: true
+  ui_steps: ["show update", "download where permitted", "user-confirmed install via channel"]
+  channels:
+    google_play: "PLAY_IN_APP_UPDATES_OR_STORE_LINK; NEVER_GITHUB_APK_SELF_UPDATE"
+    rustore: "RUSTORE_IN_APP_UPDATES_SDK_OR_STORE_LINK; VERIFY_RUNTIME_CONDITIONS"
+    github: "SEPARATE_GITHUB_FLAVOR_ONLY; user-initiated signed APK install with Android system confirmation"
+  github_metadata: "pinned repository owner/name and HTTPS; UNKNOWN until created"
+  github_release_signature: "REQUIRED_SIGNED_MANIFEST_OR_TRUSTED_VERIFIABLE_RELEASE_SIGNATURE"
+  apk_android_signing: "MUST_MATCH_INSTALLED_PACKAGE_SIGNING_IDENTITY"
+  no_silent_install: true
+  no_downgrade: true
+  no_code_loading_from_news: true
+  version_code_monotonic: true
+news:
+  format: "PLANNED_STATIC_CONTENT_OR_FEED"
+  trusted_origin: "UNKNOWN_PIN_ALLOWLIST"
+  parse_mode: "DATA_NOT_CODE"
+  html_js_execution: "DISABLED_BY_DEFAULT"
+  external_links: "USER_INITIATED_ONLY"
+  update_info_separation: "NEWS_NOT_UPDATE_AUTHORITY"
+ads_privacy:
+  ads_placement: "regular app screens only; no ads on alarms, confirmations, emergency reminders, lock screen"
+  ads_sdk: "UNKNOWN"
+  age_target: "UNKNOWN_ADULT_HOBBY_FARMER_INTENT_TO_VERIFY"
+  advertising_id: "UNKNOWN_REQUEST_ONLY_IF_SDK_NEEDS_AND_POLICY_ALLOWS"
+  consent: "REGION_AND_PROVIDER_COMPLIANT_BEFORE_SDK_AD_REQUEST"
+  data_safety_google_play: "REQUIRED_BEFORE_PUBLICATION"
+  privacy_policy_russian: "REQUIRED_FOR_RUSTORE_AND_PLAY_IF_COLLECTING_DATA; ACTUAL_CONTENT_TO_DRAFT_AFTER_SDK_SELECTION"
+  child_directed: "NO_ASSUME; if later classified, separate policy gate"
+  data_minimization: "ON_DEVICE_ONLY_FOR_BATCHES_UNLESS_USER_OPT_IN_FOR_EXPORT_SYNC"
+  analytics_crash_reporting: "DISABLED_UNTIL_EXPLICIT_ADMISSION"
+  cross_border_data_flow: "UNKNOWN_AFTER_ADS_SELECTION_REQUIRE_LEGAL_REVIEW"
+security_controls:
+  app_sandbox: "REQUIRED"
+  exported_components: "DENY_BY_DEFAULT"
+  backups: "USER_CONTROLLED_EXPORT_IMPORT; AUTO_BACKUP_POLICY_REVIEW"
+  local_encryption: "AS_REQUIRED_BY_ACTUAL_DATA_MODEL; DO_NOT_CLAIM_ENCRYPTED_WITHOUT_TEST"
+  network_security: "HTTPS_ONLY_UNLESS_EXCEPTION"
+  logs: "NO_TOKENS_PRIVATE_DIARY_AD_IDS_OR_FULL_REMOTE_PAYLOADS"
+  input_validation: "FOR_USER_INPUT_INCUBATOR_PROFILES_IMPORTS_NEWS_REMOTE_METADATA"
+  release_gate: "BLOCK_CRITICAL_NOTIFICATION_SCHEDULING_ERRORS_AND_CHANNEL_POLICY_BREACHES"
+  repository_supply_chain: "PIN_DEPENDENCIES_REVIEW_RELEASE_SIGNING_PROVENANCE_SAST_SCA_SECRET_SCAN"
+  permission_inventory: "REQUIRED_AND_VERSIONED"
+  negative_tests: "REQUIRED_FOR_ALL_TIME_AND_UPDATE_CHANNEL_BOUNDARIES"
+  release_migration_test: "REQUIRED_BATCHES_REMINDERS_PRESERVED_ACROSS_UPDATES"
+risks:
+  - "Lost/late reminders due to denied permission/Doze/OEM restrictions"
+  - "Incorrect incubation schedule due to off-by-one/timezone/DST/manual model mismatch"
+  - "False claim of actual temperature/humidity/electricity monitoring"
+  - "Google Play self-updater policy violations"
+  - "GitHub APK supply-chain compromise or mismatched package signature"
+  - "Ad network collecting more data than declared"
+  - "News feed HTML/links used as injection/phishing/update spoof"
+  - "Loss of user batches when updating or reinstalling"
+  - "Vendor trademark endorsement confusion"
+bootstrap:
+  mode: "READ_ONLY"
+  required: ["repo identification", "profile verification", "permission matrix", "schedule and time threat model", "per-channel updater threat model", "ads/privacy data-flow inventory", "CI/signing security gates", "source traceability"]
+  statuses: ["CONFIRMED", "MISMATCH", "UNKNOWN", "PLANNED", "N/A", "NOT_RUN"]
+  no_code_mutations_before_first_report: true
+sources:
+  android_notifications: "https://developer.android.com/develop/ui/compose/notifications/notification-permission"
+  android_exact_alarm: "https://developer.android.com/about/versions/14/changes/schedule-exact-alarms"
+  google_play_update_rule: "https://support.google.com/googleplay/android-developer/answer/16559646"
+  google_play_in_app_update: "https://developer.android.com/guide/playcore/in-app-updates"
+  google_play_target_sdk: "https://support.google.com/googleplay/android-developer/answer/11926878"
+  rustore_update: "https://www.rustore.ru/help/sdk/updates"
+  google_play_privacy: "https://support.google.com/googleplay/android-developer/answer/10144311"
+  rustore_app_policy: "https://www.rustore.ru/help/developers/publishing-and-verifying-apps/requirement-apps"

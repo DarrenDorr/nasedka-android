@@ -1,0 +1,47 @@
+name: Android build and tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install SDK platform
+        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Test and build all three debug variants
+        run: gradle --no-daemon testGithubDebugUnitTest assembleGithubDebug assemblePlayDebug assembleRustoreDebug
+      - name: Save GitHub APK for installation tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nasedka-github-debug-apk
+          path: app/build/outputs/apk/github/debug/*.apk
+          if-no-files-found: error
+      - name: Save store variants for smoke testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nasedka-stores-debug-apks
+          path: |
+            app/build/outputs/apk/play/debug/*.apk
+            app/build/outputs/apk/rustore/debug/*.apk
+          if-no-files-found: error
