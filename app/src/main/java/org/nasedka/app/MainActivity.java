@@ -467,6 +467,33 @@ public final class MainActivity extends Activity {
         });
         n.addView(enabled);
         Ui.addMargin(body, n, this, 12);
+        section("Звук и экран уведомлений");
+        Notifications.channels(this);
+        LinearLayout alerts = Ui.card(this);
+        Ui.addMargin(alerts, Ui.text(this,
+                "Уход: " + Notifications.channelState(this, Notifications.CH_DAILY),
+                14, Ui.DARK, true), this, 9);
+        Ui.addMargin(alerts, Ui.text(this,
+                "Важные события: " + Notifications.channelState(this, Notifications.CH_URGENT),
+                14, Ui.DARK, true), this, 12);
+        Ui.addMargin(alerts, Ui.text(this,
+                "Звук и вибрация зависят от настроек Android: громкости уведомлений, "
+                + "режима «Не беспокоить» и параметров каждого канала. "
+                + "Для подсветки заблокированного экрана на HONOR включите: "
+                + "Настройки → Уведомления → Другие настройки уведомлений → Включение экрана. "
+                + "Экран может не включаться при некоторых настройках телефона.",
+                13, Ui.MUTED, false), this, 12);
+        Ui.addMargin(alerts, button("Настроить звук важных событий", false,
+                () -> openChannelSettings(Notifications.CH_URGENT)), this, 8);
+        Ui.addMargin(alerts, button("Настроить звук проверок", false,
+                () -> openChannelSettings(Notifications.CH_DAILY)), this, 8);
+        alerts.addView(button("Открыть настройки уведомлений телефона", false, () -> {
+            try { startActivity(new Intent(Settings.ACTION_NOTIFICATION_SETTINGS)); }
+            catch (ActivityNotFoundException e) {
+                toast("Найдите раздел «Уведомления» в настройках телефона.");
+            }
+        }));
+        Ui.addMargin(body, alerts, this, 12);
         section("Проверка фоновых уведомлений");
         LinearLayout test = Ui.card(this);
         Ui.addMargin(test, Ui.text(this,
@@ -543,6 +570,23 @@ public final class MainActivity extends Activity {
             } catch (IllegalArgumentException problem) { field.setError(problem.getMessage()); }
         }));
         d.show();
+    }
+
+    private void openChannelSettings(String channelId) {
+        try {
+            Intent i = new Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS);
+            i.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+            i.putExtra(Settings.EXTRA_CHANNEL_ID, channelId);
+            startActivity(i);
+        } catch (ActivityNotFoundException e) {
+            try {
+                Intent i = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                i.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+                startActivity(i);
+            } catch (ActivityNotFoundException unavailable) {
+                toast("Откройте Настройки телефона → Уведомления → Наседка.");
+            }
+        }
     }
 
     private void askNotificationPermission() {
