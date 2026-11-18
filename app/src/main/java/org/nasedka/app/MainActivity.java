@@ -51,8 +51,9 @@ public final class MainActivity extends Activity {
     private static final String STATE_TAB = "nasedka_tab";
     private static final String STATE_BATCH = "nasedka_selected_batch";
     private static final String STATE_EXPORT_BATCH = "nasedka_export_batch";
+    private static final String STATE_FARM_PAGE = "nasedka_farm_page";
     private static final int TAB_FARM = 0, TAB_INCUBATION = 1, TAB_JOURNAL = 2;
-    private static final int TAB_NEWS = 3, TAB_SETTINGS = 4, TAB_GUIDES = 5;
+    private static final int TAB_NEWS = 3, TAB_SETTINGS = 4, TAB_GUIDES = 5, TAB_NESTS = 6;
     private final ZoneId zone = ZoneId.systemDefault();
     private LinearLayout root;
     private LinearLayout body;
@@ -60,6 +61,7 @@ public final class MainActivity extends Activity {
     private int tab = 0;
     private long selectedBatch = -1;
     private long exportingBatch = -1;
+    private int farmPage = 0;
 
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -91,6 +93,7 @@ public final class MainActivity extends Activity {
             tab = savedInstanceState.getInt(STATE_TAB, TAB_FARM);
             selectedBatch = savedInstanceState.getLong(STATE_BATCH, -1);
             exportingBatch = savedInstanceState.getLong(STATE_EXPORT_BATCH, -1);
+            farmPage = savedInstanceState.getInt(STATE_FARM_PAGE, 0);
         }
         render();
     }
@@ -99,6 +102,7 @@ public final class MainActivity extends Activity {
         outState.putInt(STATE_TAB, tab);
         outState.putLong(STATE_BATCH, selectedBatch);
         outState.putLong(STATE_EXPORT_BATCH, exportingBatch);
+        outState.putInt(STATE_FARM_PAGE, farmPage);
         super.onSaveInstanceState(outState);
     }
 
@@ -133,6 +137,8 @@ public final class MainActivity extends Activity {
 
     @Override public void onBackPressed() {
         if (selectedBatch > 0) { selectedBatch = -1; tab = TAB_INCUBATION; render(); }
+        else if (tab == TAB_NESTS) { tab = TAB_INCUBATION; render(); }
+        else if (tab == TAB_FARM && farmPage != 0) { farmPage = 0; render(); }
         else if (tab == TAB_GUIDES) { tab = TAB_INCUBATION; render(); }
         else if (tab != TAB_FARM) { tab = TAB_FARM; render(); }
         else super.onBackPressed();
@@ -154,6 +160,8 @@ public final class MainActivity extends Activity {
         body.removeAllViews();
         bottom.removeAllViews();
         if (selectedBatch > 0 && tab == TAB_INCUBATION) showDetails();
+        else if (tab == TAB_NESTS) farmScreens().render(FarmScreens.NESTS);
+        else if (tab == TAB_FARM && farmPage != 0) farmScreens().render(farmPage);
         else if (tab == TAB_FARM) showFarmHome();
         else if (tab == TAB_INCUBATION) showIncubationHome();
         else if (tab == TAB_JOURNAL) showJournal();
@@ -167,13 +175,13 @@ public final class MainActivity extends Activity {
         String[] names = {"Главная", "Инкубация", "Журнал", "Новости", "Настройки"};
         for (int i = 0; i < names.length; i++) {
             int index = i;
-            boolean selected = tab == i || (tab == TAB_GUIDES && i == TAB_INCUBATION);
+            boolean selected = tab == i || ((tab == TAB_GUIDES || tab == TAB_NESTS) && i == TAB_INCUBATION);
             TextView item = Ui.text(this, names[i], 11, selected ? Ui.GREEN : Ui.MUTED, selected);
             item.setGravity(Gravity.CENTER); item.setMinHeight(Ui.dp(this, 44));
             item.setBackground(Ui.bg(selected ? 0xFFE9F5EB : Color.WHITE, 12, 0, 0, this));
             bottom.addView(item, new LinearLayout.LayoutParams(0, -2, 1));
             item.setClickable(true); item.setFocusable(true);
-            item.setOnClickListener(v -> { tab = index; selectedBatch = -1; render(); });
+            item.setOnClickListener(v -> { tab = index; selectedBatch = -1; farmPage=0; render(); });
         }
     }
 
@@ -205,6 +213,20 @@ public final class MainActivity extends Activity {
 
     private List<Batch> all() { try (Db db = new Db(this)) { return db.allBatches(); } }
 
+    private FarmScreens farmScreens() {
+        return new FarmScreens(this, body, this::render,
+                () -> {
+                    if (tab == TAB_NESTS) tab = TAB_INCUBATION;
+                    else { tab = TAB_FARM; farmPage = 0; }
+                    render();
+                },
+                page -> {
+                    if (page == FarmScreens.NESTS) tab = TAB_NESTS;
+                    else { tab = TAB_FARM; farmPage = page; }
+                    render();
+                });
+    }
+
     private void showFarmHome() {
         title("Наседка", "Моё хозяйство · всё важное в одном месте");
         List<Batch> batches = all();
@@ -232,16 +254,7 @@ public final class MainActivity extends Activity {
             Ui.addMargin(body, warning, this, 12);
         }
 
-        section("Скоро появится");
-        LinearLayout planned = Ui.card(this);
-        Ui.addMargin(planned, Ui.text(this,
-                "Поголовье · Корма и запасы · Финансы · Отчёты",
-                16, Ui.DARK, true), this, 8);
-        planned.addView(Ui.text(this,
-                "Будем добавлять разделы по очереди. Сейчас доступна инкубация, "
-                + "остальные функции пока не ведут учёт.",
-                13, Ui.MUTED, false));
-        Ui.addMargin(body, planned, this, 10);
+        farmScreens().appendHome();
 
         section("Ближайшие действия");
         long now = System.currentTimeMillis();
@@ -274,7 +287,8 @@ public final class MainActivity extends Activity {
             Ui.addMargin(body, task, this, 10);
         }
         Ui.addMargin(body, Ui.text(this,
-                "Пока здесь отображаются только задачи инкубации.",
+                "Задачи поголовья и ухода доступны в разделе «Моё хозяйство → Задачи». "
+                + "Для них пока не настроены отдельные Android-уведомления.",
                 12, Ui.MUTED, false), this, 10);
     }
 
@@ -283,17 +297,12 @@ public final class MainActivity extends Activity {
         LinearLayout choices = Ui.card(this);
         Ui.addMargin(choices, Ui.text(this, "Способ инкубации", 18, Ui.DARK, true), this, 8);
         Ui.addMargin(choices, Ui.text(this,
-                "В инкубаторе — сначала подбор модели и проверка готовности, затем закладка и календарь. Под наседкой — отдельный будущий сценарий.",
+                "В инкубаторе — подбор модели, подготовка и календарь. Под наседкой — отдельный дневник птицы и гнезда.",
                 13, Ui.MUTED, false), this, 12);
         Ui.addMargin(choices, button("В инкубаторе · подготовка и закладка",
                 true, this::beginIncubatorPreparation), this, 9);
-        choices.addView(button("Под наседкой · в разработке", false, () ->
-                new AlertDialog.Builder(this)
-                        .setTitle("Естественное насиживание")
-                        .setMessage("Отдельный дневник и подсказки по уходу за наседкой "
-                                + "будут реализованы следующим этапом. "
-                                + "Пока нельзя создавать такую закладку как инкубаторную.")
-                        .setPositiveButton("Понятно", null).show()));
+        choices.addView(button("Под наседкой · дневник и закладки", false,
+                () -> { tab = TAB_NESTS; render(); }));
         Ui.addMargin(body, choices, this, 13);
         List<Batch> batches = all();
         long count = batches.stream().filter(b -> b.active).count();
@@ -331,7 +340,7 @@ public final class MainActivity extends Activity {
             LinearLayout card = Ui.card(this);
             int day = b.dayAt(System.currentTimeMillis(), zone);
             Ui.addMargin(card, Ui.text(this, b.name, 19, Ui.DARK, true), this, 5);
-            Ui.addMargin(card, Ui.text(this, b.species + " • " + b.eggs + " яиц • " + (b.active ? "День " + day + " из " + b.duration : "Завершена"),
+            Ui.addMargin(card, Ui.text(this, b.species + " • " + DailyTimeline.eggs(b.eggs) + " • " + (b.active ? "День " + day + " из " + b.duration : "Завершена"),
                     14, Ui.MUTED, false), this, 10);
             row(card, "Ожидаемый вывод", niceDate(b.dueAt(zone)));
             if (b.active) progress(card, Math.min(1f, (float) day / b.duration));
@@ -453,7 +462,26 @@ public final class MainActivity extends Activity {
         Ui.addMargin(body, button("Экспортировать историю в CSV", false, () -> exportStart(b)), this, 8);
         Ui.addMargin(body, button("Изменить закладку", false, () -> editBatch(b)), this, 8);
         if (b.active) Ui.addMargin(body, button("Завершить инкубацию", false, () -> finish(b)), this, 8);
+        if (!b.active && b.hatched>0) {
+            boolean transferred;
+            try(FarmDb db=new FarmDb(this)) { transferred=db.incubatorTransferred(b.id); }
+            if(transferred) Ui.addMargin(body,Ui.text(this,
+                    "✓ Молодняк из этой закладки уже учтён в поголовье.",
+                    13,Ui.GREEN,true),this,8);
+            else Ui.addMargin(body,button("Перенести птенцов в поголовье",false,
+                    ()->farmScreens().transferIncubator(b)),this,8);
+        }
         else Ui.addMargin(body, button("Возобновить закладку", false, () -> {
+            try(FarmDb db=new FarmDb(this)) {
+                if(db.incubatorTransferred(b.id)) {
+                    new AlertDialog.Builder(this)
+                            .setMessage("Молодняк из этого вывода уже перенесён в поголовье. "
+                                    + "Повторное открытие партии может нарушить историю. "
+                                    + "Для нового вывода создайте новую закладку.")
+                            .setPositiveButton("Понятно",null).show();
+                    return;
+                }
+            }
             new AlertDialog.Builder(this).setMessage("Вернуть закладку в активные? Будущие напоминания снова появятся.")
                     .setNegativeButton("Отмена", null).setPositiveButton("Возобновить", (dialog, which) -> {
                         b.active = true; try (Db db = new Db(this)) { db.saveBatch(b); }
