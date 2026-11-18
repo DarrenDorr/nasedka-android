@@ -18,6 +18,25 @@ import java.util.Locale;
 public final class ChannelUpdater {
     private ChannelUpdater() {}
     private static final String ID="apk_download_id", HASH="apk_download_sha", VERSION="apk_download_version";
+    /** True only when Android DownloadManager still knows a nonfailed APK download. */
+    public static boolean hasPending(Context c) {
+        long id = Prefs.get(c).getLong(ID, 0);
+        if (id <= 0) return false;
+        DownloadManager manager = (DownloadManager) c.getSystemService(Context.DOWNLOAD_SERVICE);
+        if (manager == null) return false;
+        try (android.database.Cursor q = manager.query(
+                new DownloadManager.Query().setFilterById(id))) {
+            if (q == null || !q.moveToFirst()) return false;
+            int status = q.getInt(q.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
+            return status == DownloadManager.STATUS_SUCCESSFUL
+                    || status == DownloadManager.STATUS_RUNNING
+                    || status == DownloadManager.STATUS_PENDING
+                    || status == DownloadManager.STATUS_PAUSED;
+        } catch (RuntimeException unavailable) {
+            return false;
+        }
+    }
+
     public static String label(Context c){
         long id=Prefs.get(c).getLong(ID,0);
         if(id==0)return "Обновление из GitHub Releases";

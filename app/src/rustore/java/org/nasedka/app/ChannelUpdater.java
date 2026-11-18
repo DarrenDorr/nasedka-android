@@ -8,6 +8,7 @@ import android.net.Uri;
 /** RuStore appupdate SDK integration will replace the store-page fallback after moderation. */
 public final class ChannelUpdater {
     private ChannelUpdater() {}
+    public static boolean hasPending(Context c) { return false; }
     public static String label(Context c){return "Обновления через RuStore (SDK — после регистрации приложения)";}
     public static void offer(Activity a,RemoteFeed.Release ignored){open(a);}
     public static void pending(Activity a){open(a);}

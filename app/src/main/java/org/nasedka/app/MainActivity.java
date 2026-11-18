@@ -3,6 +3,7 @@ package org.nasedka.app;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlarmManager;
+import android.app.NotificationManager;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
@@ -202,18 +203,16 @@ public final class MainActivity extends Activity {
             Ui.addMargin(body, warning, this, 12);
         }
 
-        section("Разделы хозяйства");
-        LinearLayout incubation = Ui.card(this);
-        Ui.addMargin(incubation, Ui.text(this, "Инкубация яиц", 18, Ui.DARK, true), this, 8);
-        Ui.addMargin(incubation, Ui.text(this,
-                "Закладки, дневник, измерения и контрольные даты.",
-                14, Ui.MUTED, false), this, 11);
-        incubation.addView(button("Открыть раздел", false, () -> { tab = TAB_INCUBATION; render(); }));
-        Ui.addMargin(body, incubation, this, 10);
-        futureFarmCard("Поголовье", "Учёт птицы, возрастных групп и молодняка.");
-        futureFarmCard("Корма и запасы", "Покупки кормов, остатки и расход.");
-        futureFarmCard("Доходы и расходы", "Затраты, продажи и итоги за период.");
-        futureFarmCard("Отчёты", "Статистика по птице и хозяйству.");
+        section("Скоро появится");
+        LinearLayout planned = Ui.card(this);
+        Ui.addMargin(planned, Ui.text(this,
+                "Поголовье · Корма и запасы · Финансы · Отчёты",
+                16, Ui.DARK, true), this, 8);
+        planned.addView(Ui.text(this,
+                "Будем добавлять разделы по очереди. Сейчас доступна инкубация, "
+                + "остальные функции пока не ведут учёт.",
+                13, Ui.MUTED, false));
+        Ui.addMargin(body, planned, this, 10);
 
         section("Ближайшие действия");
         long now = System.currentTimeMillis();
@@ -248,14 +247,6 @@ public final class MainActivity extends Activity {
         Ui.addMargin(body, Ui.text(this,
                 "Пока здесь отображаются только задачи инкубации.",
                 12, Ui.MUTED, false), this, 10);
-    }
-
-    private void futureFarmCard(String heading, String description) {
-        LinearLayout card = Ui.card(this);
-        Ui.addMargin(card, Ui.text(this, heading + " · В разработке",
-                16, Ui.DARK, true), this, 7);
-        card.addView(Ui.text(this, description, 13, Ui.MUTED, false));
-        Ui.addMargin(body, card, this, 9);
     }
 
     private void showIncubationHome() {
@@ -473,7 +464,20 @@ public final class MainActivity extends Activity {
         title("Журнал наблюдений", "История ручных измерений и заметок");
         List<Db.Entry> entries;
         try (Db db = new Db(this)) { entries = db.entries(0, 100); }
-        if (entries.isEmpty()) Ui.addMargin(body, Ui.text(this, "Показания появятся здесь после первой записи в закладке.", 15, Ui.MUTED, false), this, 8);
+        if (entries.isEmpty()) {
+            LinearLayout empty = Ui.card(this);
+            Ui.addMargin(empty, Ui.text(this, "Записей пока нет",
+                    17, Ui.DARK, true), this, 8);
+            Ui.addMargin(empty, Ui.text(this,
+                    "Откройте закладку в разделе «Инкубация», чтобы записать "
+                    + "фактическую температуру, влажность или заметку. "
+                    + "Показания вводятся вручную.",
+                    14, Ui.MUTED, false), this, 12);
+            empty.addView(button("Открыть инкубацию", false, () -> {
+                tab = TAB_INCUBATION; selectedBatch = -1; render();
+            }));
+            Ui.addMargin(body, empty, this, 10);
+        }
         for (Db.Entry e : entries) {
             Batch b;
             try (Db db = new Db(this)) { b = db.batch(e.batchId); }
@@ -541,7 +545,11 @@ public final class MainActivity extends Activity {
     }
 
     private boolean hasNotificationPermission() {
-        return Build.VERSION.SDK_INT < 33 || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
+        boolean runtimeGranted = Build.VERSION.SDK_INT < 33
+                || checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                        == PackageManager.PERMISSION_GRANTED;
+        NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        return runtimeGranted && manager != null && manager.areNotificationsEnabled();
     }
     private boolean exactAllowed() {
         if (Build.VERSION.SDK_INT < 31) return true;
@@ -560,11 +568,13 @@ public final class MainActivity extends Activity {
         Ui.addMargin(c, Ui.text(this, "Точные будильники: " + (exactAllowed() ? "доступны" : "ограничены системой"), 15, Ui.DARK, true), this, 11);
         Ui.addMargin(c, Ui.text(this, "Без разрешения на точные напоминания Android может доставить их с задержкой. При режиме энергосбережения задержки возможны и с разрешением.", 13, Ui.MUTED, false), this, 13);
         Ui.addMargin(c, button("Разрешить уведомления", false, this::askNotificationPermission), this, 8);
+        Ui.addMargin(c, button("Открыть разрешения уведомлений Android", false,
+                this::openAppNotificationSettings), this, 8);
         c.addView(button("Настроить точные напоминания", false, this::askExactAlarm));
         Ui.addMargin(body, c, this, 12);
         LinearLayout n = Ui.card(this);
         Switch enabled = new Switch(this);
-        enabled.setText("Напоминания включены");
+        enabled.setText("Планировать напоминания в приложении");
         enabled.setChecked(Prefs.notifications(this));
         enabled.setOnCheckedChangeListener((buttonView, checked) -> {
             Prefs.get(this).edit().putBoolean("notifications", checked).apply();
@@ -645,7 +655,9 @@ public final class MainActivity extends Activity {
             RemoteFeed.Release release=RemoteFeed.cachedRelease(this);
             if(RemoteFeed.hasUpdate(this)&&release!=null)
                 Ui.addMargin(remote,button("Скачать новую версию "+release.version,true,()->ChannelUpdater.offer(this,release)),this,8);
-            Ui.addMargin(remote,button("Продолжить установку APK",false,()->ChannelUpdater.pending(this)),this,8);
+            if (ChannelUpdater.hasPending(this))
+                Ui.addMargin(remote,button("Продолжить установку APK",
+                        false,()->ChannelUpdater.pending(this)),this,8);
         } else {
             Ui.addMargin(remote,button("Открыть магазин для обновлений",false,()->ChannelUpdater.pending(this)),this,8);
         }
@@ -694,10 +706,36 @@ public final class MainActivity extends Activity {
         }
     }
 
+    private void openAppNotificationSettings() {
+        try {
+            Intent settings = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+            settings.putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName());
+            startActivity(settings);
+        } catch (ActivityNotFoundException unavailable) {
+            try {
+                startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.parse("package:" + getPackageName())));
+            } catch (ActivityNotFoundException missing) {
+                toast("Откройте настройки телефона → Приложения → Наседка → Уведомления.");
+            }
+        }
+    }
+
     private void askNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= 33 && !hasNotificationPermission()) {
+        if (hasNotificationPermission()) {
+            toast("Уведомления уже разрешены.");
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                        != PackageManager.PERMISSION_GRANTED
+                && !Prefs.get(this).getBoolean("requested_post_notifications", false)) {
+            Prefs.get(this).edit().putBoolean("requested_post_notifications", true).apply();
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 100);
-        } else toast("Уведомления уже разрешены или доступны на этой версии Android.");
+        } else {
+            // On HONOR/MagicOS a repeated request may not display a system dialog.
+            openAppNotificationSettings();
+        }
     }
 
     @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {

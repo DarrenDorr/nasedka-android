@@ -8,6 +8,7 @@ import android.net.Uri;
 /** Store builds do not download or install executable code from GitHub. */
 public final class ChannelUpdater {
     private ChannelUpdater() {}
+    public static boolean hasPending(Context c) { return false; }
     public static String label(Context c){return "Обновления через Google Play (Play Core SDK — следующий этап)";}
     public static void offer(Activity a,RemoteFeed.Release ignored){open(a);}
     public static void pending(Activity a){open(a);}

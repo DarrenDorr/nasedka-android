@@ -62,9 +62,10 @@ public final class Notifications {
         if (manager == null) return "Недоступно";
         NotificationChannel channel = manager.getNotificationChannel(id);
         if (channel == null) return "Не создан";
-        if (!manager.areNotificationsEnabled() ||
-                channel.getImportance() == NotificationManager.IMPORTANCE_NONE)
-            return "Отключён в Android";
+        if (!manager.areNotificationsEnabled())
+            return "В приложении запрещены уведомления Android";
+        if (channel.getImportance() == NotificationManager.IMPORTANCE_NONE)
+            return "Отключён именно этот канал";
         String sound = channel.getSound() == null ? "без звука" : "звук настроен";
         String banners = channel.getImportance() >= NotificationManager.IMPORTANCE_HIGH
                 ? ", высокий приоритет" : "";
