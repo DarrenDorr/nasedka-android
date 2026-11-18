@@ -424,7 +424,12 @@ public final class MainActivity extends Activity {
                 Ui.addMargin(params, Ui.text(this, "⚠ Влажность отличается от диапазона в инструкции. Проверьте измерение и уровень воды.", 14, Ui.AMBER, true), this, 10);
             }
         }
-        if (b.active) params.addView(button("+ Записать температуру и влажность", true, () -> record(b)));
+        if (b.active) {
+            Ui.addMargin(params,button("+ Записать температуру и влажность",true,
+                    ()->record(b)),this,9);
+            params.addView(button("Записать овоскопирование",false,
+                    ()->recordCandling(b)));
+        }
         Ui.addMargin(body, params, this, 8);
 
         section("Ближайшие действия");
@@ -1290,26 +1295,98 @@ public final class MainActivity extends Activity {
         d.show();
     }
 
-    private void finish(Batch b) {
-        EditText hatched = Ui.field(this, "Количество выведенных", "0", true);
+
+    private void recordCandling(Batch batch) {
         LinearLayout form=Ui.vertical(this);
-        form.setPadding(Ui.dp(this, 22), Ui.dp(this, 8), Ui.dp(this, 22), Ui.dp(this, 6));
-        Ui.label(form, this, "Сколько птенцов вывелось?"); form.addView(hatched);
-        AlertDialog d = new AlertDialog.Builder(this)
-                .setTitle("Завершить инкубацию")
-                .setMessage("После завершения новые напоминания для этой закладки отправляться не будут.")
-                .setView(form).setNegativeButton("Отмена", null)
-                .setPositiveButton("Завершить", null).create();
-        d.setOnShowListener(ignore -> d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            try {
-                int n=Integer.parseInt(hatched.getText().toString().trim());
-                if(n<0||n>b.eggs) throw new IllegalArgumentException("От 0 до " + b.eggs + " птенцов.");
-                b.hatched=n; b.active=false;
-                try (Db db=new Db(this)) {db.saveBatch(b);}
-                AlarmScheduler.reschedule(this);d.dismiss();render();
-            } catch (IllegalArgumentException ex) {hatched.setError(ex.getMessage()==null?"Введите число":ex.getMessage());}
+        form.setPadding(Ui.dp(this,20),Ui.dp(this,10),Ui.dp(this,20),Ui.dp(this,9));
+        Ui.addMargin(form,Ui.text(this,
+                "Записывайте только то, что фактически увидели. "
+                +"Сомнительное яйцо не следует удалять на основании одной неточной оценки.",
+                13,Ui.MUTED,false),this,10);
+        Ui.label(form,this,"Всего осмотрено");
+        EditText inspected=Ui.field(this,"Количество",String.valueOf(batch.eggs),true);
+        Ui.addMargin(form,inspected,this,10);
+        Ui.label(form,this,"Признаки развития видны");
+        EditText visible=Ui.field(this,"0","0",true);Ui.addMargin(form,visible,this,10);
+        Ui.label(form,this,"Светлые яйца");
+        EditText clear=Ui.field(this,"0","0",true);Ui.addMargin(form,clear,this,10);
+        Ui.label(form,this,"Сомнительные");
+        EditText unsure=Ui.field(this,"0","0",true);Ui.addMargin(form,unsure,this,10);
+        Ui.label(form,this,"Фактически удалено");
+        EditText removed=Ui.field(this,"0","0",true);Ui.addMargin(form,removed,this,10);
+        Ui.label(form,this,"Заметка");
+        EditText note=Ui.field(this,"Необязательно","",false);form.addView(note);
+        ScrollView scroller=new ScrollView(this);scroller.addView(form);
+        AlertDialog d=new AlertDialog.Builder(this).setTitle("Овоскопирование")
+                .setView(scroller).setNegativeButton("Отмена",null)
+                .setPositiveButton("Сохранить",null).create();
+        d.setOnShowListener(ignored->d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+            try{
+                String report=IncubationRecords.candling(batch.eggs,
+                        Integer.parseInt(inspected.getText().toString().trim()),
+                        Integer.parseInt(visible.getText().toString().trim()),
+                        Integer.parseInt(clear.getText().toString().trim()),
+                        Integer.parseInt(unsure.getText().toString().trim()),
+                        Integer.parseInt(removed.getText().toString().trim()),
+                        note.getText().toString());
+                try(Db db=new Db(this)){db.record(batch.id,null,null,report);}
+                d.dismiss();render();
+            }catch(IllegalArgumentException error){
+                new AlertDialog.Builder(this).setMessage(
+                        error.getMessage()==null?"Проверьте введённые числа.":error.getMessage())
+                        .setPositiveButton("Понятно",null).show();
+            }
         }));
         d.show();
+    }
+
+    private void finish(Batch b) {
+        LinearLayout form=Ui.vertical(this);
+        form.setPadding(Ui.dp(this,20),Ui.dp(this,9),Ui.dp(this,20),Ui.dp(this,10));
+        Ui.addMargin(form,Ui.text(this,
+                "Фиксируйте результат по фактическому осмотру. Неопределённые причины "
+                +"можно оставить пустыми — приложение не будет ставить диагнозы.",
+                13,Ui.MUTED,false),this,9);
+        Ui.label(form,this,"Фактически выведено");
+        EditText hatched=Ui.field(this,"Количество","0",true);
+        Ui.addMargin(form,hatched,this,10);
+        Ui.label(form,this,"Неоплодотворённые (если подтверждено)");
+        EditText clear=Ui.field(this,"Необязательно","",true);
+        Ui.addMargin(form,clear,this,10);
+        Ui.label(form,this,"Замершие (если подтверждено)");
+        EditText dead=Ui.field(this,"Необязательно","",true);
+        Ui.addMargin(form,dead,this,10);
+        Ui.label(form,this,"Другие невыведшиеся яйца (если известно)");
+        EditText other=Ui.field(this,"Необязательно","",true);
+        Ui.addMargin(form,other,this,10);
+        Ui.label(form,this,"Комментарий");
+        EditText note=Ui.field(this,"Необязательно","",false);
+        form.addView(note);
+        ScrollView scroller=new ScrollView(this);scroller.addView(form);
+        AlertDialog d=new AlertDialog.Builder(this).setTitle("Завершить инкубацию")
+                .setMessage("Новые напоминания будут остановлены. Итоги сохранятся в журнале.")
+                .setView(scroller).setNegativeButton("Отмена",null)
+                .setPositiveButton("Завершить",null).create();
+        d.setOnShowListener(ignore->d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+            try {
+                int n=Integer.parseInt(hatched.getText().toString().trim());
+                Integer a=optionalCount(clear),e=optionalCount(dead),o=optionalCount(other);
+                String report=IncubationRecords.hatch(b.eggs,n,a,e,o,note.getText().toString());
+                b.hatched=n;b.active=false;
+                try(Db db=new Db(this)){db.finishWithReport(b,report);}
+                AlarmScheduler.reschedule(this);d.dismiss();render();
+            }catch(IllegalArgumentException error) {
+                new AlertDialog.Builder(this).setMessage(error.getMessage()==null?
+                        "Проверьте введённые числа.":error.getMessage())
+                        .setPositiveButton("Понятно",null).show();
+            }
+        }));
+        d.show();
+    }
+
+    private Integer optionalCount(EditText field) {
+        String value=field.getText().toString().trim();
+        return value.isEmpty()?null:Integer.parseInt(value);
     }
 
     private void startFullBackup() {

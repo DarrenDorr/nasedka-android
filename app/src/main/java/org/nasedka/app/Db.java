@@ -112,6 +112,28 @@ public final class Db extends SQLiteOpenHelper {
         }
     }
 
+    /**
+     * One transaction for the final result and its auditable journal record.
+     * Preserves the existing v2 schema.
+     */
+    public void finishWithReport(Batch batch,String report) {
+        if(batch==null||batch.id<1||batch.active||batch.hatched<0||
+                batch.hatched>batch.eggs || report==null||report.trim().isEmpty())
+            throw new IllegalArgumentException("Неверные данные завершения.");
+        SQLiteDatabase db=getWritableDatabase();
+        db.beginTransaction();
+        try{
+            if(db.update("batches",values(batch),"id=? AND active=1",
+                    new String[]{Long.toString(batch.id)})!=1)
+                throw new IllegalArgumentException("Партия уже завершена или не найдена.");
+            ContentValues log=new ContentValues();
+            log.put("batch_id",batch.id);log.put("time",System.currentTimeMillis());
+            log.put("text",report.trim());
+            db.insertOrThrow("entries",null,log);
+            db.setTransactionSuccessful();
+        }finally{db.endTransaction();}
+    }
+
     public void record(long batchId, Double temperature, Double humidity, String text) {
         ContentValues v = new ContentValues();
         v.put("batch_id", batchId); v.put("time", System.currentTimeMillis());
