@@ -385,6 +385,11 @@ public final class MainActivity extends Activity {
         Ui.addMargin(params, Ui.text(this, "Это ваша настройка; 38,0 °C — заводское значение терморегулятора из инструкции, не универсальная норма.", 12, Ui.MUTED, false), this, 8);
         Ui.addMargin(params, Ui.text(this, "Влажность: " + b.humidityGuidance(System.currentTimeMillis(), zone), 14, Ui.DARK, true), this, 12);
         Ui.addMargin(params, Ui.text(this, "Уход за водой:\n" + b.waterGuidance(), 12, Ui.MUTED, false), this, 14);
+        Ui.addMargin(params, Ui.text(this,
+                "Воздухообмен: " + (b.isNesushka()
+                ? "в штатном режиме следите, чтобы вентиляционные отверстия оставались свободными."
+                : "сверьте требования с инструкцией своей модели."),
+                12, Ui.MUTED, false), this, 10);
         Db.Entry latest = null;
         try (Db db = new Db(this)) {
             List<Db.Entry> recent = db.entries(b.id, 20);
@@ -578,8 +583,23 @@ public final class MainActivity extends Activity {
         ScrollView scroll = new ScrollView(this);
         LinearLayout content = Ui.vertical(this);
         content.setPadding(Ui.dp(this, 20), Ui.dp(this, 12), Ui.dp(this, 20), Ui.dp(this, 14));
-        Ui.addMargin(content, Ui.text(this, "Ежедневные проверки: " + Prefs.checks(this), 14, Ui.DARK, true), this, 7);
-        Ui.addMargin(content, Ui.text(this, b.manualTurn ? "Ручной переворот: " + Prefs.turns(this) : "Переворот автоматический: проверяйте работу механизма самостоятельно", 14, Ui.MUTED, false), this, 12);
+        Ui.addMargin(content, Ui.text(this,
+                "ВОЗДУХООБМЕН И ПРОВЕТРИВАНИЕ ЯИЦ", 16, Ui.DARK, true), this, 9);
+        Ui.addMargin(content, Ui.text(this,
+                "1. Постоянная вентиляция: " + VentilationAdvice.exchange(b),
+                13, Ui.MUTED, false), this, 12);
+        Ui.addMargin(content, Ui.text(this,
+                "2. Отдельное охлаждение яиц: " + VentilationAdvice.cooling(b),
+                13, Ui.MUTED, false), this, 9);
+        Ui.addMargin(content, Ui.text(this,
+                VentilationAdvice.source(b), 12, Ui.GREEN, true), this, 14);
+        Ui.addMargin(content, Ui.text(this,
+                "Ежедневные проверки: " + Prefs.checks(this),
+                14, Ui.DARK, true), this, 7);
+        Ui.addMargin(content, Ui.text(this,
+                b.manualTurn ? "Ручной переворот: " + Prefs.turns(this)
+                        : "Переворот автоматический: проверяйте работу механизма самостоятельно",
+                14, Ui.MUTED, false), this, 12);
         Set<String> done;
         try (Db db = new Db(this)) { done = db.doneKeys(b.id); }
         for (Reminder r : AlarmScheduler.plan(this, b)) {
@@ -648,6 +668,10 @@ public final class MainActivity extends Activity {
                 "Для углублений рекомендуется тёплая вода около 35 °C. До закладки прогрейте инкубатор. Яйца должны быть чистыми, немытыми, без дефектов; для контроля переворота сделайте метки «О» и «Х». Перед открытием крышки отключайте 220 В.", "Инструкция · стр. 4, 6");
         guideCard("3. Следите за влажностью",
                 "Для куриных яиц руководство рекомендует 50–55%, за два дня до вывода — 65–70%. Для уток и гусей на выводе — до 70–80%. Проверять и доливать воду рекомендуется примерно каждые три дня. Объём и количество ячеек зависят от модели.", "Инструкция · стр. 4–5");
+        guideCard("Воздухообмен и проветривание яиц",
+                VentilationAdvice.exchange(new Batch())
+                + " " + VentilationAdvice.cooling(new Batch()),
+                VentilationAdvice.source(new Batch()));
         guideCard("4. Проверяйте развитие",
                 "Первое просвечивание — около 7–8 суток, второе — около 11–13 суток. Фиксируйте результаты. Не удаляйте сомнительные яйца только по одному неуверенному наблюдению: при необходимости обратитесь к специалисту.", "Инструкция · стр. 7");
         guideCard("5. Остановите переворот",

@@ -33,7 +33,7 @@ public final class Plan {
             LocalDate date = day0.plusDays(offset);
             for (LocalTime time : checks) {
                 add(result, b, "check", "Проверить условия · " + b.name,
-                        "Проверьте температуру, влажность, воду и вентиляцию. Запишите показания.", date, time, zone);
+                        "Проверьте температуру, влажность, воду и приток воздуха к вентиляционным отверстиям. Запишите измеренные показания. Охлаждение яиц отдельно не назначено.", date, time, zone);
             }
             if (b.manualTurn && offset < b.duration - 2) {
                 for (LocalTime time : turns) {
