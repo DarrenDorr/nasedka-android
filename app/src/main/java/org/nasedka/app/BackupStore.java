@@ -44,6 +44,18 @@ public final class BackupStore {
     private static void rename(File from,File to) {
         if(!from.renameTo(to))throw new IllegalStateException("Не удалось переместить "+from.getName());
     }
+    /**
+     * After a successful WAL checkpoint and closed database handles, no nonempty
+     * sidecar may be left beside a file that will be replaced. Otherwise a stale
+     * WAL could be replayed against a restored database.
+     */
+    private static void cleanSidecars(File base) {
+        File wal=new File(base.getPath()+"-wal");
+        File journal=new File(base.getPath()+"-journal");
+        if((wal.exists()&&wal.length()>0)||(journal.exists()&&journal.length()>0))
+            throw new IllegalStateException("База ещё содержит журнал записи. Повторите операцию позже.");
+        delete(wal);delete(new File(base.getPath()+"-shm"));delete(journal);
+    }
     private static void checkpoint(SQLiteDatabase db) {
         try(Cursor c=db.rawQuery("PRAGMA wal_checkpoint(TRUNCATE)",null)){
             if(c.moveToFirst()&&c.getInt(0)!=0)
@@ -248,6 +260,11 @@ public final class BackupStore {
         for(String name:new String[]{"incuba.db",FarmDb.NAME}) {
             File current=file(c,name),old=file(c,name+".pre_restore.bak");
             if(old.exists()){
+                // The replacement database could have left sidecars, which must
+                // never be reattached to the original recovered file.
+                delete(new File(current.getPath()+"-wal"));
+                delete(new File(current.getPath()+"-shm"));
+                delete(new File(current.getPath()+"-journal"));
                 delete(current);
                 rename(old,current);
             }
@@ -262,6 +279,9 @@ public final class BackupStore {
         File pending=file(c,MARKER);
         if(pending.exists())throw new IllegalStateException("Незавершённое восстановление; перезапустите приложение.");
         delete(oldInc);delete(oldFarm);
+        // The exporter ran checkpoint(TRUNCATE) and closed both helpers.
+        // Refuse replacement if a concurrent receiver has written to either DB.
+        cleanSidecars(inc);cleanSidecars(farm);
         try(FileOutputStream marker=new FileOutputStream(pending)) {
             marker.write("rollback_if_interrupted".getBytes(StandardCharsets.UTF_8));
             marker.getFD().sync();
