@@ -10,6 +10,7 @@ import android.app.TimePickerDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -47,6 +48,9 @@ public final class MainActivity extends Activity {
     private static final DateTimeFormatter SHORT = DateTimeFormatter.ofPattern("dd.MM, HH:mm", new Locale("ru"));
     private static final DateTimeFormatter FULL = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm", new Locale("ru"));
     private static final int REQUEST_EXPORT = 77;
+    private static final String STATE_TAB = "nasedka_tab";
+    private static final String STATE_BATCH = "nasedka_selected_batch";
+    private static final String STATE_EXPORT_BATCH = "nasedka_export_batch";
     private static final int TAB_FARM = 0, TAB_INCUBATION = 1, TAB_JOURNAL = 2;
     private static final int TAB_NEWS = 3, TAB_SETTINGS = 4, TAB_GUIDES = 5;
     private final ZoneId zone = ZoneId.systemDefault();
@@ -80,8 +84,32 @@ public final class MainActivity extends Activity {
         bottom.setPadding(Ui.dp(this, 8), Ui.dp(this, 8), Ui.dp(this, 8), Ui.dp(this, 8));
         bottom.setBackgroundColor(Color.WHITE);
         root.addView(bottom, new LinearLayout.LayoutParams(-1, -2));
-        fromIntent(getIntent());
+        if (savedInstanceState == null) {
+            fromIntent(getIntent());
+        } else {
+            // Recreate navigation state after a non-rotation lifecycle restart.
+            tab = savedInstanceState.getInt(STATE_TAB, TAB_FARM);
+            selectedBatch = savedInstanceState.getLong(STATE_BATCH, -1);
+            exportingBatch = savedInstanceState.getLong(STATE_EXPORT_BATCH, -1);
+        }
         render();
+    }
+
+    @Override protected void onSaveInstanceState(Bundle outState) {
+        outState.putInt(STATE_TAB, tab);
+        outState.putLong(STATE_BATCH, selectedBatch);
+        outState.putLong(STATE_EXPORT_BATCH, exportingBatch);
+        super.onSaveInstanceState(outState);
+    }
+
+    /**
+     * Rotation and window-size changes do not recreate this Activity.
+     * Keep the active AlertDialog, checklist checkboxes, EditTexts and date picker
+     * in place; Android remeasures the existing native views for the new bounds.
+     * Do NOT call render() here: it would reset screen/scroll state needlessly.
+     */
+    @Override public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
     }
 
     @Override protected void onResume() {

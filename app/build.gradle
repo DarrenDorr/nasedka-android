@@ -10,8 +10,8 @@ android {
         applicationId 'org.nasedka.app'
         minSdk 26
         targetSdk 36
-        versionCode 9
-        versionName '0.4.0-dev'
+        versionCode 10
+        versionName '0.4.1-dev'
         testInstrumentationRunner 'android.test.InstrumentationTestRunner'
     }
 
