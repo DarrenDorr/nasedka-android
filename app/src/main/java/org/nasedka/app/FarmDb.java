@@ -18,6 +18,7 @@ public final class FarmDb extends SQLiteOpenHelper {
     public static final class Flock {
         public long id, since;
         public String name,species,breed,location;
+        public long hatchedAt;
         public int count;
     }
     public static final class Feed {
@@ -48,12 +49,14 @@ public final class FarmDb extends SQLiteOpenHelper {
         public double delta;
         public String kind,note;
     }
-    public FarmDb(Context context) { super(context,NAME,null,1); }
+    public FarmDb(Context context) { super(context,NAME,null,2); }
 
     @Override public void onCreate(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE flock (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,species TEXT NOT NULL,breed TEXT NOT NULL,place TEXT NOT NULL,since INTEGER NOT NULL)");
+        db.execSQL("CREATE TABLE flock (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,species TEXT NOT NULL,breed TEXT NOT NULL,place TEXT NOT NULL,since INTEGER NOT NULL,hatched_at INTEGER NOT NULL DEFAULT 0)");
         db.execSQL("CREATE TABLE flock_moves (id INTEGER PRIMARY KEY AUTOINCREMENT,flock_id INTEGER NOT NULL,at INTEGER NOT NULL,kind TEXT NOT NULL,delta INTEGER NOT NULL,note TEXT NOT NULL DEFAULT '')");
         db.execSQL("CREATE INDEX fm_flock ON flock_moves(flock_id,at DESC)");
+        db.execSQL("CREATE TABLE flock_notes (id INTEGER PRIMARY KEY AUTOINCREMENT,flock_id INTEGER NOT NULL,at INTEGER NOT NULL,kind TEXT NOT NULL,text TEXT NOT NULL)");
+        db.execSQL("CREATE INDEX fn_group ON flock_notes(flock_id,at DESC)");
         db.execSQL("CREATE TABLE feeds (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,unit TEXT NOT NULL)");
         db.execSQL("CREATE TABLE feed_moves (id INTEGER PRIMARY KEY AUTOINCREMENT,feed_id INTEGER NOT NULL,at INTEGER NOT NULL,kind TEXT NOT NULL,quantity REAL NOT NULL,note TEXT NOT NULL DEFAULT '')");
         db.execSQL("CREATE INDEX fd_feed ON feed_moves(feed_id,at DESC)");
@@ -69,17 +72,24 @@ public final class FarmDb extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE incubator_transfers (batch_id INTEGER PRIMARY KEY,flock_id INTEGER NOT NULL,quantity INTEGER NOT NULL,at INTEGER NOT NULL)");
     }
     @Override public void onUpgrade(SQLiteDatabase db,int oldVersion,int newVersion) {
-        throw new IllegalStateException("No farm migrations defined for "+oldVersion+"→"+newVersion);
+        if(oldVersion==1&&newVersion>=2){
+            db.execSQL("ALTER TABLE flock ADD COLUMN hatched_at INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("CREATE TABLE flock_notes (id INTEGER PRIMARY KEY AUTOINCREMENT,flock_id INTEGER NOT NULL,at INTEGER NOT NULL,kind TEXT NOT NULL,text TEXT NOT NULL)");
+            db.execSQL("CREATE INDEX fn_group ON flock_notes(flock_id,at DESC)");
+            return;
+        }
+        throw new IllegalStateException("Unsupported farm version "+oldVersion+"→"+newVersion);
     }
 
     public List<Flock> flocks() {
         List<Flock> out=new ArrayList<>();
         try(Cursor c=getReadableDatabase().rawQuery(
-                "SELECT f.*,COALESCE((SELECT SUM(m.delta) FROM flock_moves m WHERE m.flock_id=f.id),0) AS balance FROM flock f ORDER BY f.name COLLATE NOCASE",null)) {
+                "SELECT f.id,f.name,f.species,f.breed,f.place,f.since,f.hatched_at,COALESCE((SELECT SUM(m.delta) FROM flock_moves m WHERE m.flock_id=f.id),0) AS balance FROM flock f ORDER BY f.name COLLATE NOCASE",null)) {
             while(c.moveToNext()) {
                 Flock f=new Flock();f.id=c.getLong(0);f.name=c.getString(1);
                 f.species=c.getString(2);f.breed=c.getString(3);f.location=c.getString(4);
-                f.since=c.getLong(5);f.count=c.getInt(6);out.add(f);
+                f.since=c.getLong(5);f.hatchedAt=c.getLong(6);
+                f.count=c.getInt(7);out.add(f);
             }
         }
         return out;
@@ -97,14 +107,21 @@ public final class FarmDb extends SQLiteOpenHelper {
         v.put("kind",kind);v.put("delta",delta);v.put("note",note==null?"":note.trim());return v;
     }
     public long addFlock(String name,String species,String breed,String place,int initial) {
+        return addFlock(name,species,breed,place,initial,0);
+    }
+    public long addFlock(String name,String species,String breed,String place,
+                         int initial,long hatchedAt) {
         name=FarmLogic.required(name,"Название группы",80);
         species=FarmLogic.required(species,"Вид птицы",70);
         breed=breed==null?"":breed.trim();place=place==null?"":place.trim();
         FarmLogic.count(initial,10000000);
+        if(hatchedAt<0||hatchedAt>System.currentTimeMillis()+86400000L)
+            throw new IllegalArgumentException("Дата появления не может быть в будущем.");
         SQLiteDatabase db=getWritableDatabase();db.beginTransaction();
         try{
             ContentValues v=new ContentValues();v.put("name",name);v.put("species",species);
-            v.put("breed",breed);v.put("place",place);v.put("since",System.currentTimeMillis());
+            v.put("breed",breed);v.put("place",place);
+            v.put("since",System.currentTimeMillis());v.put("hatched_at",hatchedAt);
             long id=db.insertOrThrow("flock",null,v);
             if(initial>0)db.insertOrThrow("flock_moves",null,move(id,initial,"Начальный остаток",""));
             db.setTransactionSuccessful();return id;
@@ -121,6 +138,59 @@ public final class FarmDb extends SQLiteOpenHelper {
             db.setTransactionSuccessful();
         }finally{db.endTransaction();}
     }
+
+    public void updateFlock(long id,String name,String breed,String place,long hatchedAt) {
+        if(hatchedAt<0 || hatchedAt>System.currentTimeMillis()+86400000L)
+            throw new IllegalArgumentException("Неверная дата появления птицы.");
+        ContentValues v=new ContentValues();
+        v.put("name",FarmLogic.required(name,"Название",80));
+        v.put("breed",breed==null?"":breed.trim());
+        v.put("place",place==null?"":place.trim());v.put("hatched_at",hatchedAt);
+        if(getWritableDatabase().update("flock",v,"id=?",new String[]{Long.toString(id)})!=1)
+            throw new IllegalArgumentException("Группа не найдена.");
+    }
+    /** Atomic transfer, with no change to overall headcount. */
+    public void moveBetweenFlocks(long from,long to,int quantity,String note) {
+        if(from==to||quantity<=0||quantity>10000000)
+            throw new IllegalArgumentException("Неверные группы или количество.");
+        SQLiteDatabase db=getWritableDatabase();db.beginTransaction();
+        try{
+            Flock source=null,target=null;
+            for(Flock f:flocks()) {
+                if(f.id==from)source=f;
+                if(f.id==to)target=f;
+            }
+            if(source==null||target==null||!source.species.equals(target.species))
+                throw new IllegalArgumentException("Перевод допустим только между группами одного вида.");
+            FarmLogic.newHeadcount(heads(db,from),-quantity);
+            FarmLogic.newHeadcount(heads(db,to),quantity);
+            db.insertOrThrow("flock_moves",null,move(from,-quantity,"Перевод в группу "+target.name,note));
+            db.insertOrThrow("flock_moves",null,move(to,quantity,"Перевод из группы "+source.name,note));
+            db.setTransactionSuccessful();
+        }finally{db.endTransaction();}
+    }
+    public void addFlockNote(long groupId,String kind,String text) {
+        if(!exists(getReadableDatabase(),"flock",groupId))
+            throw new IllegalArgumentException("Группа не найдена.");
+        ContentValues v=new ContentValues();v.put("flock_id",groupId);
+        v.put("at",System.currentTimeMillis());
+        v.put("kind",FarmLogic.required(kind,"Тип записи",50));
+        v.put("text",FarmLogic.required(text,"Текст записи",600));
+        getWritableDatabase().insertOrThrow("flock_notes",null,v);
+    }
+    public List<Note> flockNotes(long groupId) {
+        List<Note> out=new ArrayList<>();
+        try(Cursor c=getReadableDatabase().rawQuery(
+                "SELECT at,kind,text FROM flock_notes WHERE flock_id=? ORDER BY at DESC,id DESC LIMIT 500",
+                new String[]{Long.toString(groupId)})){
+            while(c.moveToNext()){
+                Note n=new Note();n.at=c.getLong(0);
+                n.kind=c.getString(1);n.text=c.getString(2);out.add(n);
+            }
+        }
+        return out;
+    }
+
     public List<Movement> flockMoves(long id,int limit) {
         return movements("flock_moves","flock_id","delta",id,limit);
     }

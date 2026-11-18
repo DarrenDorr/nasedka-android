@@ -163,8 +163,16 @@ public final class FarmScreens {
                 LinearLayout card=Ui.card(activity);
                 add(card,txt(f.name+" · "+f.count+" птиц",18,true),7);
                 paragraph(card,f.species+(f.breed.isEmpty()?"":" · "+f.breed)
-                        +(f.location.isEmpty()?"":" · "+f.location));
+                        +(f.location.isEmpty()?"":" · "+f.location)
+                        +(f.hatchedAt==0?"":" · возраст примерно "+
+                                java.time.temporal.ChronoUnit.DAYS.between(
+                                        Instant.ofEpochMilli(f.hatchedAt).atZone(zone).toLocalDate(),
+                                        LocalDate.now(zone))+" дн."));
                 add(card,button("Приход / выбытие",false,()->flockMovement(f)),8);
+                add(card,button("Перевод в другую группу",false,()->transferFlock(f)),8);
+                add(card,button("Записать уход / осмотр",false,()->flockNote(f)),8);
+                add(card,button("История наблюдений",false,()->flockNoteHistory(f)),8);
+                add(card,button("Изменить описание",false,()->editFlock(f)),8);
                 card.addView(button("История движения",false,()->movementHistory(f.name,dbFlockMoves(f.id))));
                 add(body,card,11);
             }
@@ -180,13 +188,103 @@ public final class FarmScreens {
         EditText breed=field(f,"Порода (необязательно)","Например, Ломан Браун","",false);
         EditText place=field(f,"Место содержания","Курятник","",false);
         EditText count=field(f,"Сколько сейчас птиц","0","0",true);
+        final long[] hatched={0};
+        final Calendar day=Calendar.getInstance();
+        TextView hatchLabel=txt("Дата появления молодняка: не указана",13,false);
+        add(f,hatchLabel,5);
+        add(f,button("Указать дату появления (если известна)",false,()->{
+            new DatePickerDialog(activity,(picker,y,m,d)->{
+                day.set(y,m,d);day.set(Calendar.HOUR_OF_DAY,12);
+                hatched[0]=day.getTimeInMillis();
+                hatchLabel.setText("Дата появления: "+date(hatched[0]));
+            },day.get(Calendar.YEAR),day.get(Calendar.MONTH),
+                    day.get(Calendar.DAY_OF_MONTH)).show();
+        }),9);
         dialog("Новая группа",f,"Создать",()->{
             try(FarmDb db=new FarmDb(activity)){
                 db.addFlock(read(name),species.getSelectedItem().toString(),
-                        read(breed),read(place),intValue(count));
+                        read(breed),read(place),intValue(count),hatched[0]);
             }
         });
     }
+
+    private void editFlock(FarmDb.Flock group) {
+        LinearLayout f=form();
+        EditText name=field(f,"Название группы","",group.name,false);
+        EditText breed=field(f,"Порода","",group.breed,false);
+        EditText place=field(f,"Место содержания","",group.location,false);
+        final long[] hatched={group.hatchedAt};
+        Calendar day=Calendar.getInstance();
+        if(hatched[0]>0)day.setTimeInMillis(hatched[0]);
+        TextView hatchLabel=txt(hatched[0]==0?"Дата появления не указана":
+                "Дата появления: "+date(hatched[0]),13,false);
+        add(f,hatchLabel,6);
+        add(f,button("Изменить дату появления",false,()->{
+            new DatePickerDialog(activity,(picker,y,m,d)->{
+                day.set(y,m,d);day.set(Calendar.HOUR_OF_DAY,12);
+                hatched[0]=day.getTimeInMillis();
+                hatchLabel.setText("Дата появления: "+date(hatched[0]));
+            },day.get(Calendar.YEAR),day.get(Calendar.MONTH),
+                    day.get(Calendar.DAY_OF_MONTH)).show();
+        }),11);
+        dialog("Редактировать группу",f,"Сохранить",()->{
+            try(FarmDb db=new FarmDb(activity)){
+                db.updateFlock(group.id,read(name),read(breed),read(place),hatched[0]);
+            }
+        });
+    }
+    private void transferFlock(FarmDb.Flock source) {
+        List<FarmDb.Flock> targets=new ArrayList<>();
+        try(FarmDb db=new FarmDb(activity)){
+            for(FarmDb.Flock f:db.flocks())
+                if(f.id!=source.id&&f.species.equals(source.species))targets.add(f);
+        }
+        if(targets.isEmpty()){
+            new AlertDialog.Builder(activity).setMessage(
+                    "Нужна другая группа того же вида птицы.")
+                    .setPositiveButton("Понятно",null).show();return;
+        }
+        LinearLayout f=form();
+        String[] labels=new String[targets.size()];
+        for(int i=0;i<labels.length;i++)
+            labels[i]=targets.get(i).name+" · "+targets.get(i).count;
+        Spinner group=choice(f,"В какую группу перевести",labels);
+        EditText count=field(f,"Количество птиц","1","1",true);
+        EditText note=field(f,"Причина / примечание","","",false);
+        dialog("Переместить: "+source.name,f,"Перевести",()->{
+            try(FarmDb db=new FarmDb(activity)){
+                db.moveBetweenFlocks(source.id,targets.get(group.getSelectedItemPosition()).id,
+                        intValue(count),read(note));
+            }
+        });
+    }
+    private void flockNote(FarmDb.Flock group) {
+        LinearLayout f=form();
+        Spinner type=choice(f,"Что фиксируем",new String[]{
+                "Уход / кормление","Состояние птицы","Профилактика / вакцинация",
+                "Осмотр ветеринаром","Другое"});
+        EditText note=field(f,"Фактическая запись","Описание осмотра, без автоматического диагноза","",false);
+        dialog("Запись: "+group.name,f,"Сохранить",()->{
+            try(FarmDb db=new FarmDb(activity)){
+                db.addFlockNote(group.id,type.getSelectedItem().toString(),read(note));
+            }
+        });
+    }
+    private void flockNoteHistory(FarmDb.Flock group) {
+        LinearLayout content=form();
+        try(FarmDb db=new FarmDb(activity)){
+            List<FarmDb.Note> notes=db.flockNotes(group.id);
+            if(notes.isEmpty())paragraph(content,"Наблюдений пока нет.");
+            for(FarmDb.Note note:notes){
+                add(content,txt(when(note.at)+" · "+note.kind,14,true),5);
+                paragraph(content,note.text);
+            }
+        }
+        ScrollView scroll=new ScrollView(activity);scroll.addView(content);
+        new AlertDialog.Builder(activity).setTitle("Уход: "+group.name)
+                .setView(scroll).setPositiveButton("Закрыть",null).show();
+    }
+
     private void flockMovement(FarmDb.Flock group) {
         LinearLayout f=form();
         Spinner type=choice(f,"Что произошло",new String[]{

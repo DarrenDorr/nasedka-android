@@ -32,7 +32,7 @@ public final class BackupStore {
             "batches","entries","done"};
     public static final String[] FARM={
             "flock","flock_moves","feeds","feed_moves","finances","nests",
-            "nest_notes","egg_harvest","farm_tasks","incubator_transfers"};
+            "nest_notes","egg_harvest","farm_tasks","incubator_transfers","flock_notes"};
     private static final int MAX_FILE=24*1024*1024;
     private static final String STAGE_INC="incuba_restore_stage.db";
     private static final String STAGE_FARM="farm_restore_stage.db";
@@ -125,12 +125,13 @@ public final class BackupStore {
     }
     private static void validate(JSONObject root) throws Exception {
         if(!FORMAT.equals(root.optString("format"))||root.optInt("version")!=VERSION
-                ||root.optInt("incuba_version")!=2||root.optInt("farm_version")!=1)
+                ||root.optInt("incuba_version")!=2
+                ||(root.optInt("farm_version")!=1&&root.optInt("farm_version")!=2))
             throw new IllegalArgumentException("Неподдерживаемая версия резервной копии.");
         JSONObject inc=root.getJSONObject("incubation"),farm=root.getJSONObject("farm");
         for(String t:INCUBATION)if(inc.getJSONArray(t).length()>100000)
             throw new IllegalArgumentException("Слишком много записей в "+t);
-        for(String t:FARM)if(farm.getJSONArray(t).length()>100000)
+        for(String t:FARM)if((farm.optJSONArray(t)==null?0:farm.getJSONArray(t).length())>100000)
             throw new IllegalArgumentException("Слишком много записей в "+t);
         JSONObject prefs=root.getJSONObject("settings");
         Prefs.times(string(prefs,"checks",100));Prefs.times(string(prefs,"turns",100));
@@ -180,7 +181,14 @@ public final class BackupStore {
             throws Exception {
         db.beginTransaction();
         try {
-            for(String t:tables)importTable(db,t,data.getJSONArray(t));
+            for(String t:tables) {
+                JSONArray rows=data.optJSONArray(t);
+                if(rows==null) {
+                    if("flock_notes".equals(t))rows=new JSONArray();
+                    else throw new IllegalArgumentException("Нет обязательной таблицы "+t);
+                }
+                importTable(db,t,rows);
+            }
             db.setVersion(version);db.setTransactionSuccessful();
         }finally{db.endTransaction();}
         try(Cursor c=db.rawQuery("PRAGMA integrity_check",null)){
@@ -199,6 +207,7 @@ public final class BackupStore {
             throw new IllegalArgumentException("В резервной копии повреждены связи инкубации.");
         String[] other={
             "SELECT COUNT(*) FROM flock_moves WHERE flock_id NOT IN (SELECT id FROM flock)",
+            "SELECT COUNT(*) FROM flock_notes WHERE flock_id NOT IN (SELECT id FROM flock)",
             "SELECT COUNT(*) FROM feed_moves WHERE feed_id NOT IN (SELECT id FROM feeds)",
             "SELECT COUNT(*) FROM nest_notes WHERE nest_id NOT IN (SELECT id FROM nests)",
             "SELECT COUNT(*) FROM egg_harvest WHERE flock_id NOT IN (SELECT id FROM flock)",
@@ -222,10 +231,10 @@ public final class BackupStore {
         }
     }
     private static void prepareStage(Context c,String dbName,JSONObject data,String[] tables,
-                                     int version) throws Exception {
+                                     boolean incubation,int version) throws Exception {
         File staged=file(c,dbName);delete(staged);
         try(SQLiteDatabase db=SQLiteDatabase.openOrCreateDatabase(staged,null)) {
-            if(version==2)new Db(c).onCreate(db);else new FarmDb(c).onCreate(db);
+            if(incubation)new Db(c).onCreate(db);else new FarmDb(c).onCreate(db);
             populate(db,data,tables,version);
         }
     }
@@ -284,8 +293,8 @@ public final class BackupStore {
         }
         File stagedInc=file(c,STAGE_INC),stagedFarm=file(c,STAGE_FARM);
         try{
-            prepareStage(c,STAGE_INC,root.getJSONObject("incubation"),INCUBATION,2);
-            prepareStage(c,STAGE_FARM,root.getJSONObject("farm"),FARM,1);
+            prepareStage(c,STAGE_INC,root.getJSONObject("incubation"),INCUBATION,true,2);
+            prepareStage(c,STAGE_FARM,root.getJSONObject("farm"),FARM,false,2);
             try(SQLiteDatabase i=SQLiteDatabase.openDatabase(stagedInc.getPath(),null,
                     SQLiteDatabase.OPEN_READONLY);
                 SQLiteDatabase f=SQLiteDatabase.openDatabase(stagedFarm.getPath(),null,
@@ -303,6 +312,8 @@ public final class BackupStore {
                     .putString("sprays",p.getString("sprays"))
                     .putString("nest_checks",p.optString("nest_checks","09:00"))
                     .putBoolean("notifications",p.getBoolean("notifications"))
+                    .remove("next_alarm_at").remove("last_delivered_alarm_at")
+                    .remove("farm_task_next").remove("farm_task_delivered_at")
                     .commit();
         }finally{
             // Never delete an interrupted restore marker; Application startup
