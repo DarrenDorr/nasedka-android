@@ -48,6 +48,8 @@ public final class MainActivity extends Activity {
     private static final DateTimeFormatter SHORT = DateTimeFormatter.ofPattern("dd.MM, HH:mm", new Locale("ru"));
     private static final DateTimeFormatter FULL = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm", new Locale("ru"));
     private static final int REQUEST_EXPORT = 77;
+    private static final int REQUEST_FULL_BACKUP = 78;
+    private static final int REQUEST_FULL_RESTORE = 79;
     private static final String STATE_TAB = "nasedka_tab";
     private static final String STATE_BATCH = "nasedka_selected_batch";
     private static final String STATE_EXPORT_BATCH = "nasedka_export_batch";
@@ -776,6 +778,7 @@ public final class MainActivity extends Activity {
         enabled.setOnCheckedChangeListener((buttonView, checked) -> {
             Prefs.get(this).edit().putBoolean("notifications", checked).apply();
             AlarmScheduler.reschedule(this);
+            FarmTaskScheduler.reschedule(this);
         });
         n.addView(enabled);
         Ui.addMargin(body, n, this, 12);
@@ -852,6 +855,23 @@ public final class MainActivity extends Activity {
             catch (ActivityNotFoundException e) { toast("Найдите «Оптимизация батареи» в настройках телефона."); }
         }), this, 8);
         Ui.addMargin(body, test, this, 12);
+        section("Резервное копирование");
+        LinearLayout backup=Ui.card(this);
+        Ui.addMargin(backup,Ui.text(this,
+                "Экспорт сохраняет все закладки, журналы, поголовье, корма, финансы, "
+                + "сбор яиц, задачи и настройки времени уведомлений в выбранный вами JSON-файл. "
+                + "Файл может содержать личную информацию о хозяйстве: храните его в надёжном месте.",
+                13,Ui.MUTED,false),this,11);
+        Ui.addMargin(backup,button("Создать полную резервную копию",true,
+                this::startFullBackup),this,9);
+        Ui.addMargin(backup,Ui.text(this,
+                "Восстановление полностью ЗАМЕНЯЕТ записи на устройстве. Сначала сохраните "
+                + "резервную копию текущих данных. Восстановление выполняется через "
+                + "проверенные временные базы с возможностью отката при прерывании.",
+                13,Ui.AMBER,false),this,11);
+        backup.addView(button("Восстановить из резервной копии",false,
+                this::startFullRestore));
+        Ui.addMargin(body,backup,this,12);
         section("Новости и обновления");
         LinearLayout remote=Ui.card(this);
         Ui.addMargin(remote,Ui.text(this,"Канал: "+RemoteFeed.channel().toUpperCase(Locale.ROOT),15,Ui.DARK,true),this,8);
@@ -1286,6 +1306,23 @@ public final class MainActivity extends Activity {
         d.show();
     }
 
+    private void startFullBackup() {
+        Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.setType("application/json");
+        i.putExtra(Intent.EXTRA_TITLE,"nasedka-full-backup.json");
+        try { startActivityForResult(i,REQUEST_FULL_BACKUP); }
+        catch(ActivityNotFoundException e){toast("Нет приложения для сохранения файлов.");}
+    }
+
+    private void startFullRestore() {
+        Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.setType("*/*");
+        try { startActivityForResult(i,REQUEST_FULL_RESTORE); }
+        catch(ActivityNotFoundException e){toast("Нет приложения для выбора файлов.");}
+    }
+
     private void exportStart(Batch b) {
         exportingBatch=b.id;
         Intent i=new Intent(Intent.ACTION_CREATE_DOCUMENT);
@@ -1297,6 +1334,49 @@ public final class MainActivity extends Activity {
 
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode==RESULT_OK && data!=null && data.getData()!=null
+                && requestCode==REQUEST_FULL_BACKUP) {
+            Uri destination=data.getData();
+            new Thread(()->{
+                try {
+                    BackupStore.export(getApplicationContext(),destination);
+                    runOnUiThread(()->toast("Полная резервная копия сохранена."));
+                }catch(Exception error){
+                    runOnUiThread(()->new AlertDialog.Builder(this).setTitle("Ошибка экспорта")
+                            .setMessage(error.getMessage()).setPositiveButton("Понятно",null).show());
+                }
+            },"nasedka-backup-export").start();
+            return;
+        }
+        if (resultCode==RESULT_OK && data!=null && data.getData()!=null
+                && requestCode==REQUEST_FULL_RESTORE) {
+            Uri source=data.getData();
+            new AlertDialog.Builder(this).setTitle("Заменить все записи?")
+                    .setMessage("Выбранный файл заменит текущие инкубации, дневники, "
+                            + "поголовье, корма, финансы, задачи и часы напоминаний. "
+                            + "Перед продолжением обязательно сохраните полную резервную "
+                            + "копию текущих данных. Восстановить сейчас?")
+                    .setNegativeButton("Отмена",null)
+                    .setPositiveButton("Заменить", (dlg,which)->{
+                        new Thread(()->{
+                            try {
+                                BackupStore.restore(getApplicationContext(),source);
+                                runOnUiThread(()->{
+                                    AlarmScheduler.reschedule(this);
+                                    FarmTaskScheduler.reschedule(this);
+                                    tab=TAB_FARM;farmPage=0;selectedBatch=-1;
+                                    render();toast("Данные восстановлены. Проверьте записи и уведомления.");
+                                });
+                            }catch(Exception error) {
+                                runOnUiThread(()->new AlertDialog.Builder(this)
+                                        .setTitle("Восстановление не завершено")
+                                        .setMessage(error.getMessage())
+                                        .setPositiveButton("Понятно",null).show());
+                            }
+                        },"nasedka-backup-restore").start();
+                    }).show();
+            return;
+        }
         if (requestCode==REQUEST_EXPORT && resultCode==RESULT_OK && data!=null && data.getData()!=null) {
             try {
                 CsvExport.write(this, exportingBatch, data.getData());
