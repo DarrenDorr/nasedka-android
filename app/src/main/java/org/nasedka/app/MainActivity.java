@@ -592,6 +592,16 @@ public final class MainActivity extends Activity {
                 "Важные события: " + Notifications.channelState(this, Notifications.CH_URGENT),
                 14, Ui.DARK, true), this, 12);
         Ui.addMargin(alerts, Ui.text(this,
+                AlertDiagnostics.describe(this), 13, Ui.MUTED, false), this, 12);
+        Ui.addMargin(alerts, button("Прослушать системный сигнал", false, () ->
+                toast(AlertDiagnostics.preview(this))), this, 8);
+        Ui.addMargin(alerts, button("Открыть громкость и звуки Android", false, () -> {
+            try { startActivity(new Intent(Settings.ACTION_SOUND_SETTINGS)); }
+            catch (ActivityNotFoundException unavailable) {
+                toast("Откройте Настройки → Звуки и вибрация.");
+            }
+        }), this, 10);
+        Ui.addMargin(alerts, Ui.text(this,
                 "Звук и вибрация зависят от настроек Android: громкости уведомлений, "
                 + "режима «Не беспокоить» и параметров каждого канала. "
                 + "Для подсветки заблокированного экрана на HONOR включите: "
