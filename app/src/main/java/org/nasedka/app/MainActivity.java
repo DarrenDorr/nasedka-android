@@ -363,7 +363,7 @@ public final class MainActivity extends Activity {
         try (Db db = new Db(this)) { b = db.batch(selectedBatch); }
         if (b == null) {selectedBatch=-1;showIncubationHome();return;}
         Ui.addMargin(body, button("← Все закладки", false, () -> {selectedBatch = -1;render();}), this, 14);
-        title(b.name, b.species + " • " + b.eggs + " яиц");
+        title(b.name, b.species + " • " + DailyTimeline.eggs(b.eggs));
         LinearLayout hero = Ui.card(this);
         hero.setBackground(Ui.bg(0xFFE3F0E6, 18, 0, 0, this));
         int day = b.dayAt(System.currentTimeMillis(), zone);
@@ -376,7 +376,9 @@ public final class MainActivity extends Activity {
         row(hero, "Переворот", b.manualTurn ? "Ручной" : "Автоматический");
         row(hero, "Инкубатор", b.profileLabel());
         row(hero, "Модель", b.incubatorModel);
-        Ui.addMargin(body, hero, this, 14);
+        Ui.addMargin(body, hero, this, 10);
+        Ui.addMargin(body, button("Таблица инкубации · день за днём", true,
+                () -> showDailyTimeline(b)), this, 14);
         LinearLayout params = Ui.card(this);
         Ui.addMargin(params, Ui.text(this, "Режим и измерения", 17, Ui.DARK, true), this, 12);
         row(params, "Целевая температура", String.format(Locale.getDefault(), "%.1f °C", b.targetTemp));
@@ -424,7 +426,7 @@ public final class MainActivity extends Activity {
                     Notifications.dismiss(this, r.key); AlarmScheduler.reschedule(this); render();
                 }));
                 Ui.addMargin(body, action, this, 10);
-                if (++shown >= 8) break;
+                if (++shown >= 3) break;
             }
             if (shown == 0) Ui.addMargin(body, Ui.text(this, "В ближайшие 3 дня незавершённых действий нет.", 14, Ui.MUTED, false), this, 12);
         }
@@ -442,7 +444,7 @@ public final class MainActivity extends Activity {
             Ui.addMargin(body, c, this, 9);
         }
         Ui.space(body, this, 12);
-        Ui.addMargin(body, button("Весь календарь и контрольные даты", false, () -> fullCalendar(b)), this, 8);
+        Ui.addMargin(body, button("Ключевые даты и рекомендации", false, () -> fullCalendar(b)), this, 8);
         Ui.addMargin(body, button("Экспортировать историю в CSV", false, () -> exportStart(b)), this, 8);
         Ui.addMargin(body, button("Изменить закладку", false, () -> editBatch(b)), this, 8);
         if (b.active) Ui.addMargin(body, button("Завершить инкубацию", false, () -> finish(b)), this, 8);
@@ -461,6 +463,115 @@ public final class MainActivity extends Activity {
                         selectedBatch = -1; AlarmScheduler.reschedule(this); render();
                     }).show();
         }), this, 8);
+    }
+
+
+    private void showDailyTimeline(Batch batch) {
+        List<DailyTimeline.Observation> observed = new ArrayList<>();
+        Set<String> finished;
+        try (Db db = new Db(this)) {
+            finished = db.doneKeys(batch.id);
+            for (Db.Entry e : db.entries(batch.id, 100000))
+                observed.add(new DailyTimeline.Observation(e.time, e.temperature,
+                        e.humidity, e.text));
+        }
+        List<DailyTimeline.Day> days = DailyTimeline.build(batch, zone,
+                AlarmScheduler.plan(this, batch), finished, observed);
+        long now=System.currentTimeMillis();
+        java.time.LocalDate today=Instant.ofEpochMilli(now).atZone(zone).toLocalDate();
+        LinearLayout content=Ui.vertical(this);
+        content.setPadding(Ui.dp(this,14),Ui.dp(this,12),Ui.dp(this,14),Ui.dp(this,12));
+        Ui.addMargin(content,Ui.text(this,
+                "Каждая строка — отдельный день. Дата вывода показана отдельно. "
+                + "Незаписанные показатели не заменяются нулями. Нажмите на день для подробностей.",
+                13,Ui.MUTED,false),this,12);
+        if(!batch.active) Ui.addMargin(content,Ui.text(this,
+                "Закладка завершена: показаны сохранённые записи. Исторический график "
+                + "уведомлений мог отличаться от текущих настроек.",
+                12,Ui.AMBER,false),this,12);
+        for(DailyTimeline.Day day:days) {
+            LinearLayout card=Ui.card(this);
+            boolean current=day.date.equals(today);
+            if(current)card.setBackground(Ui.bg(0xFFE3F0E6,16,1,Ui.STROKE,this));
+            String label=day.expectedHatch?"Ожидаемый вывод":"День "+day.dayNumber;
+            if(current)label+=" · сегодня";
+            Ui.addMargin(card,Ui.text(this,label+" · "+day.date.format(DATE),
+                    16,Ui.DARK,true),this,6);
+            TextView status=Ui.text(this,dayLine(day),12,Ui.MUTED,false);
+            Ui.addMargin(card,status,this,6);
+            TextView indicator=Ui.text(this,"Подробнее ▾",13,Ui.GREEN,true);
+            Ui.addMargin(card,indicator,this,8);
+            LinearLayout details=Ui.vertical(this);
+            details.setVisibility(View.GONE);
+            if(day.plan.isEmpty()) Ui.addMargin(details,Ui.text(this,
+                    "Запланированных действий нет.",12,Ui.MUTED,false),this,8);
+            for(Reminder reminder:day.plan) {
+                LinearLayout item=Ui.card(this);
+                Ui.addMargin(item,Ui.text(this,format(reminder.at)+" · "+
+                        reminder.title.replace(" · "+batch.name,""),13,Ui.DARK,true),this,4);
+                Ui.addMargin(item,Ui.text(this,reminder.message,12,Ui.MUTED,false),this,5);
+                TextView doneStatus=Ui.text(this,day.completed(reminder)?"✓ Выполнено":
+                        reminder.at<=now?"Ожидает выполнения":"Запланировано",
+                        12,day.completed(reminder)?Ui.GREEN:Ui.MUTED,true);
+                Ui.addMargin(item,doneStatus,this,6);
+                if(batch.active && !day.completed(reminder) && reminder.at<=now) {
+                    TextView mark=button("✓ Отметить выполненным",false,()->{
+                        try(Db db=new Db(this)) {db.complete(reminder);}
+                        day.markCompleted(reminder);
+                        doneStatus.setText("✓ Выполнено");doneStatus.setTextColor(Ui.GREEN);
+                        status.setText(dayLine(day));
+                        Notifications.dismiss(this,reminder.key);
+                        AlarmScheduler.reschedule(this);
+                    });
+                    mark.setOnClickListener(v->{
+                        try(Db db=new Db(this)) {db.complete(reminder);}
+                        day.markCompleted(reminder);
+                        doneStatus.setText("✓ Выполнено");doneStatus.setTextColor(Ui.GREEN);
+                        status.setText(dayLine(day));mark.setVisibility(View.GONE);
+                        Notifications.dismiss(this,reminder.key);
+                        AlarmScheduler.reschedule(this);
+                    });
+                    Ui.addMargin(item,mark,this,4);
+                }
+                Ui.addMargin(details,item,this,7);
+            }
+            if(day.facts.isEmpty())Ui.addMargin(details,Ui.text(this,
+                    "Фактических записей нет.",12,Ui.MUTED,false),this,8);
+            for(DailyTimeline.Observation observation:day.facts) {
+                String values=(observation.temperature==null?"":"Температура "+
+                        observation.temperature+" °C  ")+(observation.humidity==null?"":
+                        "Влажность "+observation.humidity+" %");
+                if(!values.isEmpty())Ui.addMargin(details,Ui.text(this,
+                        format(observation.at)+" · "+values,12,Ui.GREEN,true),this,5);
+                if(!observation.note.trim().isEmpty())Ui.addMargin(details,Ui.text(this,
+                        format(observation.at)+" · "+observation.note,
+                        12,Ui.MUTED,false),this,7);
+            }
+            if(batch.active && current)Ui.addMargin(details,
+                    button("Записать показания сейчас",false,()->record(batch)),this,6);
+            card.addView(details);
+            indicator.setOnClickListener(v->{
+                boolean open=details.getVisibility()!=View.VISIBLE;
+                details.setVisibility(open?View.VISIBLE:View.GONE);
+                indicator.setText(open?"Свернуть ▴":"Подробнее ▾");
+            });
+            Ui.addMargin(content,card,this,9);
+        }
+        ScrollView scroll=new ScrollView(this);
+        scroll.addView(content);
+        new AlertDialog.Builder(this)
+                .setTitle("Дневник · "+batch.name)
+                .setView(scroll).setPositiveButton("Закрыть",null).show();
+    }
+
+    private String dayLine(DailyTimeline.Day day) {
+        String s="План "+day.plan.size()+" · Выполнено "+day.completedCount();
+        s+=" · "+(day.measuredCount()==0?"Измерения: не записано":
+                "Измерений: "+day.measuredCount());
+        if(day.latestTemperature()!=null)s+=" · "+day.latestTemperature()+" °C";
+        if(day.latestHumidity()!=null)s+=" · "+day.latestHumidity()+" %";
+        if(day.notesCount()>0)s+=" · заметок: "+day.notesCount();
+        return s;
     }
 
     private void fullCalendar(Batch b) {
@@ -820,17 +931,21 @@ public final class MainActivity extends Activity {
         type.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item,
                 new String[]{"Несушка БИ-1/БИ-2", "Другая модель — ручной профиль"}));
         Ui.addMargin(form, type, this, 12);
-        Ui.label(form, this, "Вместимость «Несушки» (яиц)");
+        TextView capacityLabel=Ui.text(this,"Вместимость «Несушки» (яиц)",13,Ui.MUTED,true);
+        Ui.addMargin(form,capacityLabel,this,3);
         Spinner capacity = new Spinner(this);
         capacity.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item,
                 new String[]{"36", "63", "77", "104"}));
         Ui.addMargin(form, capacity, this, 12);
-        Ui.label(form, this, "Или название другой модели");
+        TextView manualLabel=Ui.text(this,"Название другой модели",13,Ui.MUTED,true);
+        Ui.addMargin(form,manualLabel,this,3);
         EditText custom = Ui.field(this, "Например, Мой инкубатор", "", false);
         Ui.addMargin(form, custom, this, 12);
         Runnable switchFields = () -> {
             boolean other = type.getSelectedItemPosition() == 1;
+            capacityLabel.setVisibility(other ? View.GONE : View.VISIBLE);
             capacity.setVisibility(other ? View.GONE : View.VISIBLE);
+            manualLabel.setVisibility(other ? View.VISIBLE : View.GONE);
             custom.setVisibility(other ? View.VISIBLE : View.GONE);
         };
         type.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
