@@ -139,6 +139,7 @@ public final class MainActivity extends Activity {
             selectedBatch=-1;
             tab=TAB_FARM;
             farmPage=intent.getIntExtra("farm_page",FarmScreens.TASKS);
+            if(farmPage==FarmScreens.NESTS)tab=TAB_NESTS;
         }
     }
 
@@ -761,6 +762,9 @@ public final class MainActivity extends Activity {
         settingBlock("Проверка условий", Prefs.checks(this) + " ежедневно", () -> timesDialog("checks", "Проверка условий", Prefs.checks(this)));
         settingBlock("Ручной переворот", Prefs.turns(this) + " · пока до вывода более двух дней", () -> timesDialog("turns", "Напоминания о перевороте", Prefs.turns(this)));
         settingBlock("Орошение (утки и гуси)", Prefs.sprays(this) + " · если включено в закладке", () -> timesDialog("sprays", "Напоминания об орошении", Prefs.sprays(this)));
+        settingBlock("Осмотр наседки", Prefs.nestChecks(this)
+                + " ежедневно до ожидаемого вывода, если не записан осмотр",
+                () -> timesDialog("nest_checks", "Осмотр наседки", Prefs.nestChecks(this)));
         section("Системные разрешения");
         LinearLayout c = Ui.card(this);
         Ui.addMargin(c, Ui.text(this, "Уведомления: " + (hasNotificationPermission() ? "разрешены" : "не разрешены"), 15, Ui.DARK, true), this, 8);
@@ -910,7 +914,9 @@ public final class MainActivity extends Activity {
                 ArrayList<String> values = new ArrayList<>();
                 for (LocalTime t : times) values.add(t.toString());
                 Prefs.get(this).edit().putString(key, String.join(",", values)).apply();
-                AlarmScheduler.reschedule(this); d.dismiss(); render();
+                AlarmScheduler.reschedule(this);
+                FarmTaskScheduler.reschedule(this);
+                d.dismiss(); render();
             } catch (IllegalArgumentException problem) { field.setError(problem.getMessage()); }
         }));
         d.show();

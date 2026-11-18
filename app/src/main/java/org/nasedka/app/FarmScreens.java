@@ -332,6 +332,7 @@ public final class FarmScreens {
             try(FarmDb db=new FarmDb(activity)){
                 db.addNest(read(name),read(hen),species.getSelectedItem().toString(),
                         intValue(eggs),start.getTimeInMillis(),intValue(days),read(note));
+                FarmTaskScheduler.reschedule(activity);
             }
         });
     }
@@ -352,6 +353,9 @@ public final class FarmScreens {
             paragraph(content,n.species+" · "+DailyTimeline.eggs(n.eggs)+
                     "\nНачало: "+date(n.startedAt)+"\nОжидаемый вывод: "+
                     FarmLogic.dueDate(n.startedAt,n.days,zone).format(DATE));
+            paragraph(content,"Осмотр наседки: "+Prefs.nestChecks(activity)
+                    + " ежедневно, если ещё нет записи за день. "
+                    + "Дата вывода отдельно напоминается как ориентировочная.");
             paragraph(content,"Под наседкой нужно наблюдать состояние птицы, "
                     +"гнезда, доступность корма и воды. Даты и конкретные процедуры "
                     +"уточняйте для вида птицы. Температуру и влажность инкубатора здесь не назначаем.");
@@ -386,6 +390,7 @@ public final class FarmScreens {
         dialog("Дневник насиживания",f,"Записать",()->{
             try(FarmDb db=new FarmDb(activity)){
                 db.nestObservation(id,kind.getSelectedItem().toString(),read(note));
+                FarmTaskScheduler.reschedule(activity);
             }
         });
     }
@@ -394,6 +399,7 @@ public final class FarmScreens {
         EditText hatch=field(f,"Сколько птенцов вывелось","0","0",true);
         dialog("Завершение насиживания",f,"Завершить",()->{
             try(FarmDb db=new FarmDb(activity)){db.finishNest(id,intValue(hatch));}
+            FarmTaskScheduler.reschedule(activity);
         });
     }
 

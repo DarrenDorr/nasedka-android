@@ -17,6 +17,7 @@ public final class Prefs {
     public static String checks(Context c) { return get(c).getString("checks", "08:00,20:00"); }
     public static String turns(Context c) { return get(c).getString("turns", "08:00,12:00,16:00,20:00"); }
     public static String sprays(Context c) { return get(c).getString("sprays", "09:00,18:00"); }
+    public static String nestChecks(Context c) {return get(c).getString("nest_checks","09:00");}
 
     /** Strictly accepts HH:mm entries with no duplicates. */
     public static List<LocalTime> times(String input) {

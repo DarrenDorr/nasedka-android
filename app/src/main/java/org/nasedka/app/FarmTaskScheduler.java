@@ -12,6 +12,11 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import java.util.List;
+import java.util.Set;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.LocalTime;
+import java.time.Instant;
 
 /**
  * A separate rolling alarm for farm care tasks. Does not change the existing
@@ -30,6 +35,18 @@ public final class FarmTaskScheduler {
         return PendingIntent.getBroadcast(c,92,i,PendingIntent.FLAG_UPDATE_CURRENT|
                 PendingIntent.FLAG_IMMUTABLE);
     }
+    private static List<Reminder> nestReminders(Context c,FarmDb db) {
+        java.util.ArrayList<Reminder> output=new java.util.ArrayList<>();
+        ZoneId zone=ZoneId.systemDefault();
+        List<LocalTime> times=Prefs.times(Prefs.nestChecks(c));
+        for(FarmDb.Nest nest:db.nests()) {
+            if(!nest.active)continue;
+            Set<LocalDate> recorded=NestCarePlan.observedDays(nest,db.nestNotes(nest.id),zone);
+            output.addAll(NestCarePlan.generate(nest,zone,times,recorded));
+        }
+        return output;
+    }
+
     public static synchronized void reschedule(Context c) {
         Context app=c.getApplicationContext();
         AlarmManager am=(AlarmManager)app.getSystemService(Context.ALARM_SERVICE);
@@ -46,6 +63,9 @@ public final class FarmTaskScheduler {
         try(FarmDb db=new FarmDb(app)) {
             for(FarmDb.Task task:db.tasks(true)) {
                 if(task.dueAt>now+1000&&task.dueAt<nearest)nearest=task.dueAt;
+            }
+            for(Reminder nest:nestReminders(app,db)) {
+                if(nest.at>now+1000&&nest.at<nearest)nearest=nest.at;
             }
         }
         if(nearest!=Long.MAX_VALUE){
@@ -76,6 +96,12 @@ public final class FarmTaskScheduler {
                     send(c,task);
                     if(++shown>=5)break;
                 }
+                if(shown<5)for(Reminder nest:nestReminders(c,db)) {
+                    if(nest.at>now || nest.at<=Math.max(last,now-12L*60L*60L*1000L))
+                        continue;
+                    sendNest(c,nest);
+                    if(++shown>=5)break;
+                }
             }
         }
         Prefs.get(c).edit().putLong(PREF_LAST,now).apply();
@@ -102,6 +128,29 @@ public final class FarmTaskScheduler {
                 .setVisibility(Notification.VISIBILITY_PRIVATE)
                 .build();
         nm.notify(taskId(task.id),n);
+    }
+    private static void sendNest(Context c,Reminder reminder) {
+        if(Build.VERSION.SDK_INT>=33&&
+                c.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                        !=PackageManager.PERMISSION_GRANTED)return;
+        NotificationManager nm=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);
+        if(nm==null||!nm.areNotificationsEnabled())return;
+        Notifications.channels(c);
+        Intent open=new Intent(c,MainActivity.class);
+        open.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        open.putExtra("farm_page",FarmScreens.NESTS);
+        PendingIntent pending=PendingIntent.getActivity(c,
+                reminder.key.hashCode()&0x7fffffff,open,
+                PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
+        Notification notice=new Notification.Builder(c,Notifications.CH_DAILY)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(reminder.title)
+                .setContentText(reminder.message)
+                .setStyle(new Notification.BigTextStyle().bigText(reminder.message))
+                .setContentIntent(pending).setAutoCancel(true)
+                .setCategory(Notification.CATEGORY_REMINDER)
+                .setVisibility(Notification.VISIBILITY_PRIVATE).build();
+        nm.notify(reminder.key.hashCode()&0x7fffffff,notice);
     }
     private static int taskId(long id) {return ("farm-task-"+id).hashCode()&0x7fffffff;}
     public static void complete(Context c,long id) {

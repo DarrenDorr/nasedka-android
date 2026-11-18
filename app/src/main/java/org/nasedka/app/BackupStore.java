@@ -78,6 +78,7 @@ public final class BackupStore {
     private static JSONObject settings(Context c) throws Exception {
         return new JSONObject().put("checks",Prefs.checks(c))
                 .put("turns",Prefs.turns(c)).put("sprays",Prefs.sprays(c))
+                .put("nest_checks",Prefs.nestChecks(c))
                 .put("notifications",Prefs.notifications(c));
     }
     private static byte[] snapshot(Context c) throws Exception {
@@ -134,6 +135,7 @@ public final class BackupStore {
         JSONObject prefs=root.getJSONObject("settings");
         Prefs.times(string(prefs,"checks",100));Prefs.times(string(prefs,"turns",100));
         Prefs.times(string(prefs,"sprays",100));
+        Prefs.times(prefs.optString("nest_checks","09:00"));
         if(!prefs.has("notifications") || !(prefs.get("notifications") instanceof Boolean))
             throw new IllegalArgumentException("Неверные настройки уведомлений.");
     }
@@ -299,6 +301,7 @@ public final class BackupStore {
                     .putString("checks",p.getString("checks"))
                     .putString("turns",p.getString("turns"))
                     .putString("sprays",p.getString("sprays"))
+                    .putString("nest_checks",p.optString("nest_checks","09:00"))
                     .putBoolean("notifications",p.getBoolean("notifications"))
                     .commit();
         }finally{
