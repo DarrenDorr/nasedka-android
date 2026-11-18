@@ -471,7 +471,7 @@ public final class FarmScreens {
     }
 
     private void tasks() {
-        title("Задачи по хозяйству","План и выполнение. Пока это локальный список; системные уведомления для этих задач ещё не включены.");
+        title("Задачи по хозяйству","План и выполнение. Android-напоминания доступны при разрешённых уведомлениях; энергосбережение телефона может задержать доставку.");
         add(body,button("+ Новая задача",true,this::newTask),13);
         try(FarmDb db=new FarmDb(activity)) {
             List<FarmDb.Task> items=db.tasks(false);
@@ -487,6 +487,7 @@ public final class FarmScreens {
                 if(!task.notes.isEmpty())paragraph(card,task.notes);
                 if(task.doneAt==0)card.addView(button("✓ Выполнено",false,()->{
                     try(FarmDb fresh=new FarmDb(activity)){fresh.completeTask(task.id);}
+                    FarmTaskScheduler.complete(activity,task.id);
                     refresh.run();
                 }));
                 add(body,card,8);
@@ -518,6 +519,7 @@ public final class FarmScreens {
         }),12);
         dialog("Новая задача",f,"Запланировать",()->{
             try(FarmDb db=new FarmDb(activity)){db.addTask(read(title),read(note),when.getTimeInMillis());}
+            FarmTaskScheduler.reschedule(activity);
         });
     }
 

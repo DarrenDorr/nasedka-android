@@ -119,6 +119,7 @@ public final class MainActivity extends Activity {
     @Override protected void onResume() {
         super.onResume();
         AlarmScheduler.reschedule(this);
+        FarmTaskScheduler.reschedule(this);
         if (body != null) render();
         refreshRemote(false);
     }
@@ -132,6 +133,10 @@ public final class MainActivity extends Activity {
         if (intent != null && intent.hasExtra("batch_id")) {
             selectedBatch = intent.getLongExtra("batch_id", -1);
             tab = TAB_INCUBATION;
+        } else if(intent!=null && intent.hasExtra("farm_page")) {
+            selectedBatch=-1;
+            tab=TAB_FARM;
+            farmPage=intent.getIntExtra("farm_page",FarmScreens.TASKS);
         }
     }
 
@@ -288,7 +293,7 @@ public final class MainActivity extends Activity {
         }
         Ui.addMargin(body, Ui.text(this,
                 "Задачи поголовья и ухода доступны в разделе «Моё хозяйство → Задачи». "
-                + "Для них пока не настроены отдельные Android-уведомления.",
+                + "Доставка напоминаний зависит от разрешений и энергосбережения Android.",
                 12, Ui.MUTED, false), this, 10);
     }
 

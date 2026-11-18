@@ -9,6 +9,7 @@ public final class BootReceiver extends BroadcastReceiver {
         if (intent != null && intent.getAction() != null) {
             Notifications.channels(context);
             AlarmScheduler.reschedule(context);
+            FarmTaskScheduler.reschedule(context);
         }
     }
 }
