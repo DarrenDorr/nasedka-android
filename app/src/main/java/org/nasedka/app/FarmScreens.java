@@ -113,32 +113,72 @@ public final class FarmScreens {
         if(open!=null)card.addView(button("Открыть",false,open));
         add(body,card,9);
     }
+    /**
+     * Compact navigation grid. The dashboard above provides the numeric summaries;
+     * these cards are deliberately descriptive rather than repeating all KPIs.
+     */
     public void appendHome() {
-        heading("Моё хозяйство");
-        try(FarmDb db=new FarmDb(activity)) {
-            List<FarmDb.Flock> birds=db.flocks();
-            long now=System.currentTimeMillis();
-            long month=Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
-                    .withDayOfMonth(1).atStartOfDay(zone).toInstant().toEpochMilli();
-            long[] totals=db.totals(month,Long.MAX_VALUE);
-            item("Поголовье · "+db.totalBirds()+" птиц",
-                    "Групп: "+birds.size()+". Возраст, поступления, выбытия и история изменений.",
-                    ()->navigate.accept(FLOCK));
-            item("Инкубация под наседкой · "+db.openNests()+" активных",
-                    "Гнёзда, наблюдения, ожидаемый и фактический вывод.",
-                    ()->navigate.accept(NESTS));
-            item("Корма и запасы · "+db.feeds().size()+" позиций",
-                    "Поступления, расход и фактический остаток.",()->navigate.accept(FEED));
-            item("Доходы и расходы",
-                    "Этот месяц: доходы "+FarmLogic.rub(totals[0])
-                            +", расходы "+FarmLogic.rub(totals[1])+".",()->navigate.accept(FINANCE));
-            item("Сбор яиц","Записи по группам птицы, статистика.",()->navigate.accept(EGGS));
-            item("Задачи по хозяйству · "+db.tasks(true).size()+" открытых",
-                    "Список действий с отметкой выполнения.",()->navigate.accept(TASKS));
-            item("Отчёты","Финансы, поголовье, запасы, яйценоскость, результаты вывода.",
-                    ()->navigate.accept(REPORTS));
+        heading("Разделы хозяйства");
+        add(body,txt("Записи, уход, запасы и результаты — каждый инструмент на своём месте.",
+                13,false),13);
+        tiles(
+                new Tile("Поголовье","Птица и группы",FarmGlyph.BIRD,FLOCK,0xFFE2EFE7),
+                new Tile("Корма","Запасы и расход",FarmGlyph.FEED,FEED,0xFFF3EED9));
+        tiles(
+                new Tile("Финансы","Доходы и траты",FarmGlyph.FINANCE,FINANCE,0xFFFBEBD9),
+                new Tile("Сбор яиц","Ежедневный учёт",FarmGlyph.EGGS,EGGS,0xFFF7ECE0));
+        tiles(
+                new Tile("Задачи","Дела и напоминания",FarmGlyph.TASKS,TASKS,0xFFE6EDF8),
+                new Tile("Отчёты","Итоги хозяйства",FarmGlyph.REPORTS,REPORTS,0xFFE8EDF4));
+        tiles(
+                new Tile("Под наседкой","Гнёзда и вывод",FarmGlyph.NEST,NESTS,0xFFEEE9F5),
+                new Tile("Инкубация","В электронном инкубаторе",
+                        FarmGlyph.INCUBATION,0,0xFFE3F1E7));
+    }
+
+    private static final class Tile {
+        final String title,desc;
+        final int icon,page,shade;
+        Tile(String title,String desc,int icon,int page,int shade) {
+            this.title=title;this.desc=desc;this.icon=icon;this.page=page;this.shade=shade;
         }
     }
+    private void tiles(Tile first,Tile second) {
+        LinearLayout row=Ui.horizontal(activity);
+        row.setGravity(android.view.Gravity.TOP);
+        LinearLayout a=tile(first),b=tile(second);
+        row.addView(a,new LinearLayout.LayoutParams(0,
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,1));
+        Ui.space(row,activity,0); // vertical spacing is applied to the entire row below
+        View gap=new View(activity);
+        row.addView(gap,new LinearLayout.LayoutParams(Ui.dp(activity,10),1));
+        row.addView(b,new LinearLayout.LayoutParams(0,
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,1));
+        add(body,row,10);
+    }
+    private LinearLayout tile(Tile data) {
+        LinearLayout card=Ui.vertical(activity);
+        card.setPadding(Ui.dp(activity,14),Ui.dp(activity,15),
+                Ui.dp(activity,13),Ui.dp(activity,14));
+        card.setBackground(Ui.ripple(activity,Ui.WHITE,18));
+        card.setElevation(Ui.dp(activity,1));
+        card.setClickable(true);card.setFocusable(true);
+        card.setMinimumHeight(Ui.dp(activity,150));
+        card.setContentDescription(data.title+": "+data.desc);
+        LinearLayout icon=Ui.iconCircle(activity,data.icon,Ui.GREEN_DARK,data.shade);
+        card.addView(icon,new LinearLayout.LayoutParams(Ui.dp(activity,45),Ui.dp(activity,45)));
+        Ui.space(card,activity,12);
+        add(card,txt(data.title,16,true),4);
+        TextView subtitle=txt(data.desc,12,false);
+        subtitle.setMaxLines(2);
+        card.addView(subtitle);
+        card.setOnClickListener(v->{
+            if(data.page==0)back.run();
+            else navigate.accept(data.page);
+        });
+        return card;
+    }
+
     public void render(int page) {
         add(body,button(page==NESTS?"← К инкубации":"← Моё хозяйство",false,back),14);
         switch(page) {
