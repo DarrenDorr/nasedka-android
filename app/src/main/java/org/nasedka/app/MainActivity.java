@@ -22,6 +22,7 @@ import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -254,10 +255,10 @@ public final class MainActivity extends Activity {
         LinearLayout choices = Ui.card(this);
         Ui.addMargin(choices, Ui.text(this, "Способ инкубации", 18, Ui.DARK, true), this, 8);
         Ui.addMargin(choices, Ui.text(this,
-                "В инкубаторе — действующий сценарий. Уход под наседкой добавим отдельно.",
+                "В инкубаторе — сначала подбор модели и проверка готовности, затем закладка и календарь. Под наседкой — отдельный будущий сценарий.",
                 13, Ui.MUTED, false), this, 12);
-        Ui.addMargin(choices, button("В инкубаторе · новая закладка",
-                true, () -> editBatch(null)), this, 9);
+        Ui.addMargin(choices, button("В инкубаторе · подготовка и закладка",
+                true, this::beginIncubatorPreparation), this, 9);
         choices.addView(button("Под наседкой · в разработке", false, () ->
                 new AlertDialog.Builder(this)
                         .setTitle("Естественное насиживание")
@@ -764,7 +765,129 @@ public final class MainActivity extends Activity {
         }
     }
 
+
+    /** Selection for a new batch. Editing an existing batch never repeats this wizard. */
+    private static final class PreparationChoice {
+        final boolean nesushka;
+        final String model;
+
+        PreparationChoice(boolean nesushka, String model) {
+            this.nesushka = nesushka;
+            this.model = model;
+        }
+
+        String note() {
+            return IncubationPreparation.journalNote(nesushka, model);
+        }
+    }
+
+    private void beginIncubatorPreparation() {
+        LinearLayout form = Ui.vertical(this);
+        form.setPadding(Ui.dp(this, 22), Ui.dp(this, 8),
+                Ui.dp(this, 22), Ui.dp(this, 10));
+        Ui.addMargin(form, Ui.text(this, "Выберите оборудование. Для неизвестных моделей подсказки и таблицы «Несушки» не применяются.",
+                14, Ui.MUTED, false), this, 12);
+        Ui.label(form, this, "Тип инкубатора");
+        Spinner type = new Spinner(this);
+        type.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item,
+                new String[]{"Несушка БИ-1/БИ-2", "Другая модель — ручной профиль"}));
+        Ui.addMargin(form, type, this, 12);
+        Ui.label(form, this, "Вместимость «Несушки» (яиц)");
+        Spinner capacity = new Spinner(this);
+        capacity.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item,
+                new String[]{"36", "63", "77", "104"}));
+        Ui.addMargin(form, capacity, this, 12);
+        Ui.label(form, this, "Или название другой модели");
+        EditText custom = Ui.field(this, "Например, Мой инкубатор", "", false);
+        Ui.addMargin(form, custom, this, 12);
+        Runnable switchFields = () -> {
+            boolean other = type.getSelectedItemPosition() == 1;
+            capacity.setVisibility(other ? View.GONE : View.VISIBLE);
+            custom.setVisibility(other ? View.VISIBLE : View.GONE);
+        };
+        type.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> parent, View view,
+                                                 int position, long id) { switchFields.run(); }
+            @Override public void onNothingSelected(AdapterView<?> parent) { }
+        });
+        switchFields.run();
+        AlertDialog select = new AlertDialog.Builder(this)
+                .setTitle("Подготовка · шаг 1 из 3")
+                .setView(form)
+                .setNegativeButton("Отмена", null)
+                .setPositiveButton("Далее", null).create();
+        select.setOnShowListener(ignore -> select.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(view -> {
+                    boolean nesushka = type.getSelectedItemPosition() == 0;
+                    String selected = nesushka ? capacity.getSelectedItem().toString()
+                                               : custom.getText().toString().trim();
+                    if (selected.isEmpty() || selected.length() > 80) {
+                        if (!nesushka) custom.setError("Укажите название до 80 символов.");
+                        else toast("Выберите вместимость инкубатора.");
+                        return;
+                    }
+                    select.dismiss();
+                    showPreparationChecklist(new PreparationChoice(nesushka, selected));
+                }));
+        select.show();
+    }
+
+    private void showPreparationChecklist(PreparationChoice choice) {
+        LinearLayout form = Ui.vertical(this);
+        form.setPadding(Ui.dp(this, 20), Ui.dp(this, 8),
+                Ui.dp(this, 20), Ui.dp(this, 10));
+        String label = choice.nesushka ? "Несушка БИ-1/БИ-2 · " + choice.model + " яиц"
+                                      : "Другая модель · " + choice.model;
+        Ui.addMargin(form, Ui.text(this, label, 17, Ui.DARK, true), this, 8);
+        Ui.addMargin(form, Ui.text(this,
+                choice.nesushka ? "Проверочный список по руководству «Несушки» (2021). Отметьте фактически выполненные действия."
+                                : "Общий список готовности. Правила, нормы воды и режимы именно вашего инкубатора необходимо сверить с его инструкцией.",
+                13, Ui.MUTED, false), this, 12);
+        ArrayList<CheckBox> boxes = new ArrayList<>();
+        for (IncubationPreparation.Step step : IncubationPreparation.steps(choice.nesushka)) {
+            LinearLayout item = Ui.card(this);
+            CheckBox checked = new CheckBox(this);
+            checked.setText(step.title);
+            checked.setTextColor(Ui.DARK);
+            checked.setTextSize(15);
+            checked.setContentDescription(step.title + ". " + step.explanation);
+            Ui.addMargin(item, checked, this, 5);
+            Ui.addMargin(item, Ui.text(this, step.explanation,
+                    13, Ui.MUTED, false), this, 6);
+            item.addView(Ui.text(this, step.source,
+                    12, Ui.GREEN, false));
+            Ui.addMargin(form, item, this, 10);
+            boxes.add(checked);
+        }
+        Ui.addMargin(form, Ui.text(this,
+                "Перед открытием крышки отключайте инкубатор от электросети. Приложение не измеряет температуру и влажность самостоятельно. Отметки сохранятся в журнале только после создания закладки.",
+                13, Ui.AMBER, true), this, 8);
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(form);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Подготовка · шаг 2 из 3")
+                .setView(scroll)
+                .setNegativeButton("Назад", (d, which) -> beginIncubatorPreparation())
+                .setPositiveButton("К закладке", null).create();
+        dialog.setOnShowListener(ignore -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(view -> {
+                    for (CheckBox checked : boxes) {
+                        if (!checked.isChecked()) {
+                            toast("Отметьте выполненные пункты. Незавершённую подготовку можно продолжить позже.");
+                            return;
+                        }
+                    }
+                    dialog.dismiss();
+                    editBatch(null, choice);
+                }));
+        dialog.show();
+    }
+
     private void editBatch(Batch existing) {
+        editBatch(existing, null);
+    }
+
+    private void editBatch(Batch existing, PreparationChoice prepared) {
         Batch original = existing;
         Calendar start = Calendar.getInstance();
         if (existing != null) start.setTimeInMillis(existing.startedAt);
@@ -785,20 +908,24 @@ public final class MainActivity extends Activity {
         Spinner profile=new Spinner(this);
         profile.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,
                 new String[]{"Несушка БИ-1/БИ-2", "Другой инкубатор (ручной профиль)"}));
-        profile.setSelection(existing!=null && !existing.isNesushka()?1:0);
+        profile.setSelection(prepared != null ? (prepared.nesushka ? 0 : 1)
+                : (existing != null && !existing.isNesushka() ? 1 : 0));
         Ui.addMargin(form,profile,this,10);
         TextView nesushkaLabel=Ui.text(this, "Модель инкубатора «Несушка» (по вместимости)",13,Ui.MUTED,true);
         Ui.addMargin(form,nesushkaLabel,this,3);
         Spinner model = new Spinner(this);
         model.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, Batch.INCUBATOR_MODELS));
-        if (existing != null) for (int i=0; i<Batch.INCUBATOR_MODELS.length; i++) {
-            if (Batch.INCUBATOR_MODELS[i].equals(existing.incubatorModel)) model.setSelection(i);
+        String selectedModel = prepared != null && prepared.nesushka
+                ? prepared.model : (existing != null ? existing.incubatorModel : "");
+        for (int i = 0; i < Batch.INCUBATOR_MODELS.length; i++) {
+            if (Batch.INCUBATOR_MODELS[i].equals(selectedModel)) model.setSelection(i);
         }
         Ui.addMargin(form, model, this, 10);
         TextView otherLabel=Ui.text(this,"Название другой модели (произвольное)",13,Ui.MUTED,true);
         Ui.addMargin(form,otherLabel,this,3);
         EditText customModel=Ui.field(this,"Например, Инкубатор дома",
-                existing!=null&&!existing.isNesushka()?existing.incubatorModel:"",false);
+                prepared != null && !prepared.nesushka ? prepared.model
+                        : (existing != null && !existing.isNesushka() ? existing.incubatorModel : ""),false);
         Ui.addMargin(form,customModel,this,12);
         Runnable visibility=()->{boolean custom=profile.getSelectedItemPosition()==1;
             model.setVisibility(custom?View.GONE:View.VISIBLE);
@@ -811,6 +938,14 @@ public final class MainActivity extends Activity {
             @Override public void onNothingSelected(AdapterView<?> parent){}
         });
         visibility.run();
+        if (prepared != null) {
+            profile.setEnabled(false);
+            model.setEnabled(false);
+            customModel.setEnabled(false);
+            Ui.addMargin(form, Ui.text(this,
+                    "Модель выбрана на шаге 1, подготовка отмечена на шаге 2. Чтобы сменить модель, отмените создание и пройдите подготовку заново.",
+                    12, Ui.MUTED, false), this, 9);
+        }
         Ui.label(form, this, "Количество яиц");
         EditText eggs = Ui.field(this, "Количество", existing == null ? "" : String.valueOf(existing.eggs), true);
         Ui.addMargin(form, eggs, this, 10);
@@ -829,10 +964,10 @@ public final class MainActivity extends Activity {
         }, start.get(Calendar.YEAR), start.get(Calendar.MONTH), start.get(Calendar.DAY_OF_MONTH)).show());
         Ui.addMargin(form, date, this, 13);
         Ui.label(form, this, "Целевая температура, °C");
-        EditText temp = Ui.field(this, "Например, 38,0", existing == null ? "38,0" : String.valueOf(existing.targetTemp).replace('.', ','), true);
+        EditText temp = Ui.field(this, "Введите по инструкции своего вида птицы", existing == null ? "" : String.valueOf(existing.targetTemp).replace('.', ','), true);
         temp.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL | InputType.TYPE_NUMBER_FLAG_SIGNED);
         Ui.addMargin(form, temp, this, 7);
-        Ui.addMargin(form, Ui.text(this, "38,0 °C — заводская настройка терморегулятора из руководства, уточните режим своей птицы.", 12, Ui.MUTED, false), this, 14);
+        Ui.addMargin(form, Ui.text(this, "Для «Несушки» 38,0 °C — заводская установка терморегулятора, а не универсальная норма. Уточните температуру по виду птицы и инструкции модели.", 12, Ui.MUTED, false), this, 14);
         Switch manual = new Switch(this);
         manual.setText("Ручной переворот: напоминать");
         manual.setChecked(existing != null && existing.manualTurn);
@@ -855,7 +990,7 @@ public final class MainActivity extends Activity {
         ScrollView scroller = new ScrollView(this);
         scroller.addView(form);
         AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(existing == null ? "Новая закладка" : "Изменить закладку")
+                .setTitle(existing == null && prepared != null ? "Подготовка · шаг 3 из 3" : (existing == null ? "Новая закладка" : "Изменить закладку"))
                 .setView(scroller)
                 .setNegativeButton("Отмена", null).setPositiveButton("Сохранить", null).create();
         dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
@@ -864,7 +999,10 @@ public final class MainActivity extends Activity {
                 if (n.isEmpty() || n.length() > 80) throw new IllegalArgumentException("Укажите название до 80 символов.");
                 int amount = Integer.parseInt(eggs.getText().toString().trim());
                 int days = Integer.parseInt(duration.getText().toString().trim());
-                double target = Double.parseDouble(temp.getText().toString().trim().replace(',', '.'));
+                String targetText = temp.getText().toString().trim();
+                if (targetText.isEmpty()) throw new IllegalArgumentException(
+                        "Введите целевую температуру по инструкции своего инкубатора и вида птицы.");
+                double target = Double.parseDouble(targetText.replace(',', '.'));
                 if (amount < 1 || amount > 5000) throw new IllegalArgumentException("Количество яиц: от 1 до 5000.");
                 if (days < 3 || days > 60) throw new IllegalArgumentException("Срок: от 3 до 60 суток.");
                 if (!Double.isFinite(target) || target < 20 || target > 45) throw new IllegalArgumentException("Температура: от 20 до 45 °C. Уточните режим своего инкубатора.");
@@ -879,7 +1017,13 @@ public final class MainActivity extends Activity {
                 b.eggs=amount;
                 b.duration=days; b.startedAt=start.getTimeInMillis(); b.targetTemp=target;
                 b.manualTurn=manual.isChecked(); b.spray=b.isNesushka() && spray.isChecked() && (Batch.DUCK.equals(b.species)||Batch.GOOSE.equals(b.species));
-                try (Db db = new Db(this)) { db.saveBatch(b); }
+                try (Db db = new Db(this)) {
+                    if (original == null && prepared != null) {
+                        db.savePreparedBatch(b, prepared.note());
+                    } else {
+                        db.saveBatch(b);
+                    }
+                }
                 selectedBatch=b.id; tab=TAB_INCUBATION;
                 AlarmScheduler.reschedule(this); dialog.dismiss(); render();
             } catch (IllegalArgumentException error) {

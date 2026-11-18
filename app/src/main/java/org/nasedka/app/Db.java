@@ -55,6 +55,31 @@ public final class Db extends SQLiteOpenHelper {
         return b.id;
     }
 
+    /**
+     * Atomic creation of a batch plus its user-reported preparation log.
+     * Existing batches and the database schema are not modified by the preparation wizard.
+     */
+    public long savePreparedBatch(Batch b, String preparationNote) {
+        if (b.id != 0) throw new IllegalArgumentException("Подготовка записывается только при создании.");
+        if (preparationNote == null || preparationNote.trim().isEmpty())
+            throw new IllegalArgumentException("Отсутствует запись подготовки.");
+        SQLiteDatabase database = getWritableDatabase();
+        database.beginTransaction();
+        try {
+            long id = database.insertOrThrow("batches", null, values(b));
+            ContentValues log = new ContentValues();
+            log.put("batch_id", id);
+            log.put("time", System.currentTimeMillis());
+            log.put("text", preparationNote.trim());
+            database.insertOrThrow("entries", null, log);
+            database.setTransactionSuccessful();
+            b.id = id;
+            return id;
+        } finally {
+            database.endTransaction();
+        }
+    }
+
     private static Batch fromCursor(Cursor c) {
         Batch b = new Batch();
         b.id = c.getLong(c.getColumnIndexOrThrow("id"));
