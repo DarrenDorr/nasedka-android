@@ -9,10 +9,12 @@
 **СЕЙЧАС (фактически выполнено):**
 
 - Зарегистрированы 43 изображения, 3 `LOCKED` эталона, статус и SHA-256 каждого: `docs/design/ASSET_CATALOG.md`, `ASSET_CHECKSUMS.md`.
-- Проверен оригинальный ZIP `Nasedka_Design_Vault_COMPLETE_2026-11-23.zip` и подготовлен **Nasedka_GitHub_Design_Assets_2026-11-23.zip**, 85,9 МиБ, SHA-256 `bda897b6dbe0bba800b26be41862623e77ba962e9cbbd30259eca58e7c647457`. В нём 43 оригинальных PNG с путями `docs/design/assets/DES-000.png…DES-042.png`, полный манифест и список хешей. **Оригинальные PNG ещё НЕ загружены в GitHub.**
+- Проверен оригинальный ZIP `Nasedka_Design_Vault_COMPLETE_2026-11-23.zip` и подготовлен **Nasedka_GitHub_Design_Assets_2026-11-23.zip**, 85,9 МиБ, SHA-256 `bda897b6dbe0bba800b26be41862623e77ba962e9cbbd30259eca58e7c647457`. В нём 43 оригинальных PNG с путями `docs/design/assets/DES-000.png…DES-042.png`, полный манифест и список хешей. **Оригинальные PNG ещё НЕ загружены в GitHub**, но оба ZIP также сохранены в личной ChatGPT Library: `/Наседка/Nasedka_Design_Vault_COMPLETE_2026-11-23.zip` и `/Наседка/Nasedka_GitHub_Design_Assets_2026-11-23.zip`.
 - Выполнена **READ-ONLY сверка реального GitHub-кода** `0.9.0-dev` с утверждёнными экранами: [матрица наличия, пробелов и источников](design/IMPLEMENTATION_AUDIT_2026-11-23.md). Например, код рисует 5 нижних кнопок вместо 4, а учёт яиц пока не содержит складской модели движения.
 - Добавлены [проверяющий скрипт](../tools/verify_design_assets.py), [GitHub Actions контроль 43 изображений](../.github/workflows/design-reference-integrity.yml) и [инструкция единовременного переноса PNG](design/ASSET_UPLOAD_GUIDE.md). Проверка **ещё не может завершиться успешно на GitHub**, пока нет исходных PNG.
 - Java/Android-исходники, сертификаты подписи, текущая база и ранее согласованный внешний вид **не изменены**.
+
+**Блокер учтён как [GitHub issue #6](https://github.com/DarrenDorr/nasedka-android/issues/6).** Один первый запуск `Design reference integrity` завершился ошибкой, поскольку изображения ещё не были загружены; это ожидаемое подтверждение отсутствия файлов, а не ошибка сборки Android. Дальнейшая автоматическая проверка запускается при изменениях каталога изображений или вручную.
 
 **СЛЕДУЮЩИЙ конкретный шаг:** загрузить все **43 неизменённых PNG** из готового комплекта в `docs/design/assets/` один раз, убедиться в `Design reference integrity: success`, обновить статус загрузки. Из этой среды прямой бинарный перенос 85,9 МиБ в GitHub не поддерживается; исходный архив подготовлен для загрузки через GitHub Desktop/другой Git-клиент.
 
