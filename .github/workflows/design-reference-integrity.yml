@@ -4,15 +4,9 @@ on:
   push:
     paths:
       - 'docs/design/assets/**'
-      - 'docs/design/ASSET_CHECKSUMS.md'
-      - 'tools/verify_design_assets.py'
-      - '.github/workflows/design-reference-integrity.yml'
   pull_request:
     paths:
       - 'docs/design/assets/**'
-      - 'docs/design/ASSET_CHECKSUMS.md'
-      - 'tools/verify_design_assets.py'
-      - '.github/workflows/design-reference-integrity.yml'
   workflow_dispatch:
 
 permissions:
