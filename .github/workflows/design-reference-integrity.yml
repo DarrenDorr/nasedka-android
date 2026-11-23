@@ -1,0 +1,28 @@
+name: Design reference integrity
+
+on:
+  push:
+    paths:
+      - 'docs/design/assets/**'
+      - 'docs/design/ASSET_CHECKSUMS.md'
+      - 'tools/verify_design_assets.py'
+      - '.github/workflows/design-reference-integrity.yml'
+  pull_request:
+    paths:
+      - 'docs/design/assets/**'
+      - 'docs/design/ASSET_CHECKSUMS.md'
+      - 'tools/verify_design_assets.py'
+      - '.github/workflows/design-reference-integrity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-original-designs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Verify all 43 original images match approved SHA-256
+        run: python3 tools/verify_design_assets.py
