@@ -68,6 +68,8 @@ jobs:
             app/build/outputs/apk/github/debug/*.apk
             signing-status.txt
           if-no-files-found: error
+          # Ordinary CI debug APKs are short-lived; manually requested control builds are retained longer.
+          retention-days: ${{ github.event_name == 'workflow_dispatch' && 30 || 7 }}
       - name: Save store variants for smoke testing
         uses: actions/upload-artifact@v4
         with:
@@ -76,3 +78,5 @@ jobs:
             app/build/outputs/apk/play/debug/*.apk
             app/build/outputs/apk/rustore/debug/*.apk
           if-no-files-found: error
+          # Ordinary CI debug APKs are short-lived; manually requested control builds are retained longer.
+          retention-days: ${{ github.event_name == 'workflow_dispatch' && 30 || 7 }}
