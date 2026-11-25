@@ -204,4 +204,69 @@ public class BackupReliabilityTest {
             assertEquals(8,scalar(dstFarm,"SELECT quantity FROM incubator_transfers WHERE batch_id=7"));
         }
     }
+
+    @Test public void coercedVersionsAndSettingsRejected() throws Exception {
+        for(String field:new String[]{"version","incuba_version","farm_version"}) {
+            for(Object invalid:new Object[]{"2",1.9,JSONObject.NULL}) {
+                JSONObject root=emptyEnvelope(2); root.put(field,invalid);
+                rejected(()->BackupStore.validate(root));
+            }
+        }
+        JSONObject root=emptyEnvelope(2);
+        root.getJSONObject("settings").put("nest_checks",JSONObject.NULL);
+        rejected(()->BackupStore.validate(root));
+        JSONObject bad=emptyEnvelope(2);
+        bad.getJSONObject("settings").put("notifications","true");
+        rejected(()->BackupStore.validate(bad));
+    }
+    @Test public void missingNullAndNonIntegerRowFieldsRejectedWithoutPartialInsert() throws Exception {
+        try(SQLiteDatabase inc=SQLiteDatabase.create(null); SQLiteDatabase farm=SQLiteDatabase.create(null)) {
+            createCurrent(inc,farm); seedInc(inc);
+            JSONObject source=BackupStore.all(inc,BackupStore.INCUBATION);
+            for(String field:new String[]{"id","active","profile_id","hatched"}) {
+                JSONObject bad=new JSONObject(source.toString());
+                bad.getJSONArray("batches").getJSONObject(0).remove(field);
+                assertRejectedStaging(bad);
+            }
+            JSONObject missingNullable=new JSONObject(source.toString());
+            missingNullable.getJSONArray("entries").getJSONObject(0).remove("humidity");
+            assertRejectedStaging(missingNullable);
+            for(Object invalid:new Object[]{JSONObject.NULL,7.5,Double.MAX_VALUE,"7"}) {
+                JSONObject bad=new JSONObject(source.toString());
+                bad.getJSONArray("batches").getJSONObject(0).put("id",invalid);
+                assertRejectedStaging(bad);
+            }
+            JSONObject duplicate=new JSONObject(source.toString());
+            JSONArray batches=duplicate.getJSONArray("batches");
+            batches.put(new JSONObject(batches.getJSONObject(0).toString()));
+            assertRejectedStaging(duplicate);
+            JSONObject extra=new JSONObject(source.toString());
+            extra.getJSONArray("batches").getJSONObject(0).put("unexpected",1);
+            assertRejectedStaging(extra);
+        }
+    }
+    private void assertRejectedStaging(JSONObject data) throws Exception {
+        try(SQLiteDatabase dst=SQLiteDatabase.create(null); Db helper=new Db(context())) {
+            helper.onCreate(dst);
+            rejected(()->BackupStore.populate(dst,data,BackupStore.INCUBATION,2));
+            for(String table:BackupStore.INCUBATION)
+                assertEquals(table,0,scalar(dst,"SELECT COUNT(*) FROM "+table));
+        }
+    }
+    @Test public void legacyOnlyHatchedAtDefaultIsNormalized() throws Exception {
+        try(SQLiteDatabase inc=SQLiteDatabase.create(null); SQLiteDatabase farm=SQLiteDatabase.create(null);
+            SQLiteDatabase dst=SQLiteDatabase.create(null); FarmDb helper=new FarmDb(context())) {
+            createCurrent(inc,farm); seedFarmV1(farm);
+            JSONObject data=BackupStore.all(farm,BackupStore.FARM);
+            data.getJSONArray("flock").getJSONObject(0).remove("hatched_at");
+            JSONObject current=envelope(2,empty(BackupStore.INCUBATION),data);
+            BackupStore.validate(current); helper.onCreate(dst);
+            rejected(()->BackupStore.populate(dst,data,BackupStore.FARM,2));
+            assertEquals(0,scalar(dst,"SELECT COUNT(*) FROM flock"));
+            JSONObject legacy=envelope(1,empty(BackupStore.INCUBATION),data);
+            BackupStore.validate(legacy);
+            BackupStore.populate(dst,data,BackupStore.FARM,2);
+            assertEquals(0,scalar(dst,"SELECT hatched_at FROM flock WHERE id=3"));
+        }
+    }
 }

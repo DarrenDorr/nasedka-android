@@ -1,0 +1,86 @@
+name: R1 Android SQLite verification
+on:
+  pull_request:
+    paths:
+      - 'app/src/main/java/org/nasedka/app/BackupStore.java'
+      - 'app/src/main/java/org/nasedka/app/Db.java'
+      - 'app/src/main/java/org/nasedka/app/FarmDb.java'
+      - 'app/src/androidTest/**'
+      - 'app/build.gradle'
+      - '.github/workflows/r1-android-sqlite.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: r1-sqlite-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  sqlite:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Install SDK and prepare isolated Android emulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager="$(find "$ANDROID_HOME/cmdline-tools" -type f -path '*/bin/sdkmanager' | sort -V | tail -n 1)"
+          test -n "$sdkmanager"
+          "$sdkmanager" --install 'platforms;android-36' 'build-tools;35.0.0' 'platform-tools' 'emulator' 'system-images;android-35;google_apis;x86_64'
+          test -e /dev/kvm
+          sudo chown "$(id -u):$(id -g)" /dev/kvm
+          printf 'no\n' | "$(dirname "$sdkmanager")/avdmanager" create avd --force --name r1_sqlite --package 'system-images;android-35;google_apis;x86_64'
+      - name: Execute real Android SQLite tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          adb="$ANDROID_HOME/platform-tools/adb"
+          "$ANDROID_HOME/emulator/emulator" -avd r1_sqlite -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect -accel on > "$RUNNER_TEMP/r1-emulator.log" 2>&1 &
+          emulator_pid=$!
+          trap '"$adb" emu kill >/dev/null 2>&1 || true; kill "$emulator_pid" 2>/dev/null || true' EXIT
+          timeout 300 "$adb" wait-for-device
+          timeout 300 bash -c 'until [ "$("$ANDROID_HOME/platform-tools/adb" shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" = 1 ]; do sleep 3; done'
+          "$adb" shell input keyevent 82
+          "$adb" shell getprop ro.build.version.sdk
+          gradle --no-daemon connectedGithubDebugAndroidTest
+      - name: Verify actual test execution (no empty PASS)
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          files = list(Path("app/build/outputs/androidTest-results/connected").rglob("TEST-*.xml"))
+          cases = [c for p in files for c in ET.parse(p).getroot().iter("testcase")
+                   if c.get("classname","").endswith(".BackupReliabilityTest")]
+          expected = {
+              "currentRoundTripAllFourteenTables", "v2MissingAnyTableIsRejected",
+              "v1OnlyAbsentNotesAllowed", "brokenTransferReferencesAndQuantityRejected",
+              "farmV1MigrationPreservesRowsAndIds", "incV1ReconstructedMigrationPreservesRows",
+              "farmV1BackupMigratesWithoutNotes", "coercedVersionsAndSettingsRejected",
+              "missingNullAndNonIntegerRowFieldsRejectedWithoutPartialInsert",
+              "legacyOnlyHatchedAtDefaultIsNormalized",
+          }
+          names = {c.get("name") for c in cases}
+          assert expected <= names, f"Missing executed tests: {expected - names}"
+          assert all(not any(c.find(t) is not None for t in ("failure","error","skipped")) for c in cases), "Failure or skipped test"
+          print(f"R1: {len(cases)} executed Android SQLite tests; required methods present.")
+          PY
+      - name: Preserve small test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r1-android-sqlite-evidence
+          path: |
+            app/build/outputs/androidTest-results/connected/**/*.xml
+            ${{ runner.temp }}/r1-emulator.log
+          retention-days: 3
+          if-no-files-found: warn
