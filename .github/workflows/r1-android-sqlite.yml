@@ -7,6 +7,7 @@ on:
       - 'app/src/main/java/org/nasedka/app/FarmDb.java'
       - 'app/src/main/java/org/nasedka/app/Restore*.java'
       - 'app/src/androidTest/**'
+      - 'tools/r1/process_death.py'
       - 'app/build.gradle'
       - '.github/workflows/r1-android-sqlite.yml'
   workflow_dispatch:
@@ -97,7 +98,8 @@ jobs:
           api="$("$adb" -s "$serial" shell getprop ro.build.version.sdk | tr -d '\r')"
           test "$api" = 35
           "$adb" devices -l
-          gradle --no-daemon connectedGithubDebugAndroidTest
+          gradle --no-daemon connectedGithubDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.notClass=org.nasedka.app.RestoreProcessDeathTest
+          python3 tools/r1/process_death.py "$adb" "$serial" "$RUNNER_TEMP/r1-process-death"
       - name: Verify actual test execution (no empty PASS)
         shell: bash
         run: |
@@ -121,7 +123,7 @@ jobs:
           print(f"R1: {len(cases)} executed Android SQLite tests; required methods present.")
           storage_cases = [c for p in files for c in ET.parse(p).getroot().iter("testcase")
                            if c.get("classname","").endswith(".RestoreFileStorageTest")]
-          storage_expected = set(["restoreTwoSqliteFilesAndSettings","recoverAfterOneFileReplacement","failedSettingsWriteAfterBothDatabasesRecovers","corruptRollbackSourceKeepsJournalAndOtherCopies","legacyMarkerAndSidecarsBlockBeforeMutation","preparedWalPreservesCommittedRows","missingSqliteIsNotCreatedByPreparation","insufficientSpaceRejectsBeforeJournalOrLiveChanges","settingsFailureAfterWriteStillRollsBack","repeatedRecoveryAfterPartialRollback","committedRecoveryAfterPartialCleanupRetainsNewData","legacyRecoveryAcrossAllFiveRenamePrefixes","legacyRecoveryRepeatsAfterFirstCopy","legacyAmbiguousOrMalformedMarkerPreservesFiles","legacyConflictingJournalOrFailedValidationBlocksReplacement","legacyRecoveryValidatesRealVersionTwoSchemas"])
+          storage_expected = set(["restoreTwoSqliteFilesAndSettings","recoverAfterOneFileReplacement","failedSettingsWriteAfterBothDatabasesRecovers","corruptRollbackSourceKeepsJournalAndOtherCopies","legacyMarkerAndSidecarsBlockBeforeMutation","preparedWalPreservesCommittedRows","missingSqliteIsNotCreatedByPreparation","insufficientSpaceRejectsBeforeJournalOrLiveChanges","settingsFailureAfterWriteStillRollsBack","repeatedRecoveryAfterPartialRollback","committedRecoveryAfterPartialCleanupRetainsNewData","legacyRecoveryAcrossAllFiveRenamePrefixes","legacyRecoveryRepeatsAfterFirstCopy","legacyAmbiguousOrMalformedMarkerPreservesFiles","legacyConflictingJournalOrFailedValidationBlocksReplacement","legacyRecoveryValidatesRealVersionTwoSchemas","realWriteDenialDuringApplyRetainsPending","realWriteDenialDuringCommitPublicationRollsBack","realWriteDenialDuringRollbackPreservesSources"])
           assert len(storage_cases) == len(storage_expected), "Wrong storage test count"
           assert {c.get("name") for c in storage_cases} == storage_expected, "Missing/unexpected storage tests"
           assert all(not any(c.find(t) is not None for t in ("failure","error","skipped")) for c in storage_cases)
@@ -135,5 +137,6 @@ jobs:
           path: |
             app/build/outputs/androidTest-results/connected/**/*.xml
             ${{ runner.temp }}/r1-emulator.log
+            ${{ runner.temp }}/r1-process-death/**
           retention-days: 3
           if-no-files-found: warn

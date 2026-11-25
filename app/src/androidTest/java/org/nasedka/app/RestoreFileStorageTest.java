@@ -276,4 +276,39 @@ public class RestoreFileStorageTest {
             assertArrayEquals(oldSettings,port.read());
         }finally{root=initialRoot;}
     }
+
+    private void assertRealFileAccessFailure(Checked action)throws Exception {
+        try{action.run();fail("Expected real filesystem access failure");}
+        catch(java.nio.file.FileSystemException e){
+            assertTrue("Expected permission denial: "+e,e instanceof java.nio.file.AccessDeniedException
+                    ||String.valueOf(e.getReason()).toLowerCase(Locale.ROOT).contains("permission denied"));
+        }
+    }
+    @Test public void realWriteDenialDuringApplyRetainsPending()throws Exception {
+        RestoreFileStorage s=storage(newSettings);s.prepare();s.publish(NONE,PENDING);
+        android.system.Os.chmod(root.toString(),0500);
+        try{assertRealFileAccessFailure(s::applyIncubation);}
+        finally{android.system.Os.chmod(root.toString(),0700);}
+        assertEquals(PENDING,storage(null).readPhase());
+        assertTrue(Files.exists(work.resolve("old-inc.db")));
+        assertEquals(OLD_GENERATION,new RestoreProtocol(storage(null)).recover());assertGeneration(false);
+    }
+    @Test public void realWriteDenialDuringCommitPublicationRollsBack()throws Exception {
+        RestoreFileStorage s=storage(newSettings);s.prepare();s.publish(NONE,PENDING);
+        s.applyIncubation();s.applyFarm();s.applySettings();
+        android.system.Os.chmod(work.toString(),0500);
+        try{assertRealFileAccessFailure(()->s.publish(PENDING,COMMITTED));}
+        finally{android.system.Os.chmod(work.toString(),0700);}
+        assertEquals(PENDING,storage(null).readPhase());
+        assertEquals(OLD_GENERATION,new RestoreProtocol(storage(null)).recover());assertGeneration(false);
+    }
+    @Test public void realWriteDenialDuringRollbackPreservesSources()throws Exception {
+        RestoreFileStorage s=storage(newSettings);s.prepare();s.publish(NONE,PENDING);s.applyIncubation();
+        android.system.Os.chmod(root.toString(),0500);
+        try{assertRealFileAccessFailure(()->new RestoreProtocol(storage(null)).recover());}
+        finally{android.system.Os.chmod(root.toString(),0700);}
+        assertEquals(PENDING,storage(null).readPhase());
+        assertTrue(Files.exists(work.resolve("old-inc.db")));assertTrue(Files.exists(work.resolve("old-farm.db")));
+        assertEquals(OLD_GENERATION,new RestoreProtocol(storage(null)).recover());assertGeneration(false);
+    }
 }

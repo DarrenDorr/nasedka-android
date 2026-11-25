@@ -81,6 +81,20 @@ jobs:
               assert not any(c.find(k) is not None for c in cases for k in ("failure", "error", "skipped"))
               print(f"{suite}: {len(cases)} executed, 0 failures/errors/skipped")
           PY
+      - name: Execute real bounded filesystem ENOSPC probe (Linux)
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/r1/enospc.sh 2>&1 | tee "$RUNNER_TEMP/r1-enospc.log"
+          grep -Fx 'R1 bounded Linux tmpfs ENOSPC: PASS' "$RUNNER_TEMP/r1-enospc.log"
+      - name: Preserve bounded filesystem probe
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r1-enospc-evidence
+          path: ${{ runner.temp }}/r1-enospc.log
+          retention-days: 3
+          if-no-files-found: warn
       - name: Preserve R1 restore JVM reports
         if: always()
         uses: actions/upload-artifact@v4

@@ -46,3 +46,6 @@ Commit 6fc92091fba5e540f30c62dc5ecd943b4be76a51. [Build 45540385042](https://git
 Все пять новых legacy methods PASS, включая пять префиксов исторической замены файлов, повторный recovery, ambiguous/malformed marker, конфликт журналов и реальную пару схем v2. Это подтверждает изолированный алгоритм в тестовых условиях, а не production startup или безопасность при аппаратной потере питания. Отсутствующий старый marker не позволяет установить исторический исход операции.
 
 **Решение:** PASS_TESTED_SCOPE, R1.1b-2b HOLD. Остались actual process death с независимым restart, реальные I/O failure и ENOSPC, финальный аудит. Не выдавать injected space probe за настоящее заполнение FS, пересоздание adapter — за kill процесса. Не переходить к R1.1b-3, не подключать production adapter и не merge PR #8. По просьбе пользователя в этой итерации только проверка и фиксация результатов, без изменения production кода или новых тестов.
+
+## Аварийные испытания — новая редакция
+Повторный CI документационного a5948fc SUCCESS (45543274191/45543274189). Добавлены 3 Android метода permission denial, шесть отдельных actual process death cases и Linux tmpfs ENOSPC probe; [отдельный отчёт](R1_1B_CRASH_IO_2026-11-25.md). Результаты NOT_RUN, HOLD сохраняется; Android ENOSPC не заменяется Linux probe.
