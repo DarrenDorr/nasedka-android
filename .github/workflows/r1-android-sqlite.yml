@@ -6,6 +6,8 @@ on:
       - 'app/src/main/java/org/nasedka/app/Db.java'
       - 'app/src/main/java/org/nasedka/app/FarmDb.java'
       - 'app/src/main/java/org/nasedka/app/Restore*.java'
+      - 'app/src/main/java/org/nasedka/app/DataAccessCoordinator.java'
+      - 'app/src/test/java/org/nasedka/app/DataAccessCoordinatorTest.java'
       - 'app/src/androidTest/**'
       - 'tools/r1/process_death.py'
       - 'tools/r1/android_enospc.sh'

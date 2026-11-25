@@ -66,3 +66,6 @@ Application прежде любого открытия live helper устана�
 
 ## 7. Continuation
 Read PROJECT_STATUS.md, this document, machine inventory, closure/evidence and security baseline first. Next: implement -3b without production wiring, add exact test-method XML evidence to CI, verify both CI and previous 57 checks. Do not restart -2b or edit historical approved decisions; record failures and limitations. 
+
+## Реализация -3b (новая редакция)
+[Изолированное ядро и тестовый план](R1_1B_3B_CORE_2026-11-25.md). Уточнения реализации: короткий synchronized metadata monitor (не lock-free); RESTORE state используется и для recovery с отдельным Work; SHORT reentrancy только same-thread LIFO, heavy owner использует requireOwner без nested SHORT; повторное закрытие своего завершённого lease идемпотентно, чужое/непоочерёдное запрещено. finishVerified — доверенная граница подтверждения, storage verification выполняется будущим caller. Никакого production wiring. CI NOT_RUN.

@@ -69,6 +69,7 @@ jobs:
           root = Path("app/build/test-results/testGithubDebugUnitTest")
           required = {
               "RestoreProtocolTest": ["successfulRestoreCommitsAllThreeAndClearsJournal","beforeAndAfterEveryRestoreBoundaryRecoversCorrectGeneration","repeatedInterruptionDuringRollbackIsRecoverable","settingsCommitFailureDoesNotCommitDatabases","pendingRestoreRejectsAnotherRestoreWithoutWriting","corruptJournalFailsClosed","missingRollbackCopiesRemainPending","corruptCommittedGenerationDoesNotCleanupOrRollback","committedCleanupFailureNeverRollsBack"],
+              "DataAccessCoordinatorTest": ["startupAndUnresolvedRecoveryBlockOrdinaryAccess","concurrentShortRejectsOtherThreadWithoutWaiting","reservationRaceAdmitsExactlyOneHeavyOperation","nestedShortIsLifoAndCannotUpgrade","foreignThreadCannotReleaseOrUseLease","ticketTransferredAndClaimedOnlyOnce","cancellationRestoresOnlyOriginalUnclaimedState","cancellationAndClaimRaceCannotReleaseActiveWork","shortAndSnapshotExceptionsReleaseButRestoreFailsClosed","workerOwnershipSurvivesInitiatingThreadExit","oldLeaseDoubleCloseCannotReleaseNewOperation","staleTokenRejectedAfterRestoreAndRollbackEvenWithSameUuid","tokenAdmissionIsAtomicAgainstRestoreReservation"],
               "RestoreJournalTest": ["commitSurvivesReopenAndClearsOnlyTerminal","rollbackTerminalSurvivesReopen","wrongGenerationOrHashesCannotPublishOrClear","invalidTransitionsDoNotChangeJournal","damagedJournalIsNotTreatedAsMissing","orphanTemporaryDoesNotOverrideAuthoritativeJournal","oversizedOrNonRegularJournalFailsClosed","missingDirectoryIsNotAnEmptyJournal"],
           }
           for suite, names in required.items():
@@ -100,7 +101,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: r1-restore-jvm-evidence
-          path: app/build/test-results/testGithubDebugUnitTest/TEST-org.nasedka.app.Restore*Test.xml
+          path: |
+            app/build/test-results/testGithubDebugUnitTest/TEST-org.nasedka.app.Restore*Test.xml
+            app/build/test-results/testGithubDebugUnitTest/TEST-org.nasedka.app.DataAccessCoordinatorTest.xml
           retention-days: 3
           if-no-files-found: warn
       - name: Save GitHub APK for installation tests
