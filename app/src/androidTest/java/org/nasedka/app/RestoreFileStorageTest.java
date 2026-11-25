@@ -373,4 +373,94 @@ public class RestoreFileStorageTest {
         assertEquals(NO_PENDING,new RestoreProtocol(faultStorage(null,fault)).recover());
         assertGeneration(true);
     }
+
+    private static final UUID GEN_OLD=UUID.fromString("00000000-0000-4000-8000-000000000001");
+    private static final UUID GEN_NEW=UUID.fromString("00000000-0000-4000-8000-000000000002");
+    private void installGenerationFixtures()throws IOException {
+        assertTrue(prefs.edit().putString(RestoreSettingsPort.GENERATION,GEN_OLD.toString()).commit());
+        oldSettings=port.read();
+        Map<String,Object> next=new HashMap<>();
+        next.put("checks","09:00");next.put("notifications",false);
+        next.put(RestoreSettingsPort.GENERATION,GEN_NEW.toString());
+        newSettings=RestoreSettingsPort.encode(next);
+    }
+
+    @Test public void generationCommitAndRollbackPreserveCorrectUuid()throws Exception {
+        installGenerationFixtures();
+        RestoreFileStorage s=storage(newSettings);s.prepare();s.publish(NONE,PENDING);
+        s.applyIncubation();s.applyFarm();s.applySettings();
+        assertEquals(GEN_NEW,port.generation());
+        assertEquals(OLD_GENERATION,new RestoreProtocol(storage(null)).recover());
+        assertEquals(GEN_OLD,new RestoreSettingsPort(prefs).generation());assertGeneration(false);
+        assertEquals(NEW_GENERATION,new RestoreProtocol(storage(newSettings)).restore());
+        assertEquals(GEN_NEW,new RestoreSettingsPort(prefs).generation());assertGeneration(true);
+    }
+
+    @Test public void legacySettingsEncodingRemainsByteIdenticalAndRemovesGeneration()throws Exception {
+        byte[] legacy=oldSettings.clone();
+        java.io.ByteArrayOutputStream buf=new java.io.ByteArrayOutputStream();
+        try(java.io.DataOutputStream out=new java.io.DataOutputStream(buf)){
+            out.writeInt(0x4e535032);out.writeBoolean(true);out.writeUTF("08:00");
+            out.writeBoolean(false);out.writeBoolean(false);out.writeBoolean(false);
+            out.writeBoolean(true);out.writeBoolean(true);
+            out.writeBoolean(true);out.writeLong(42L);
+            out.writeBoolean(false);out.writeBoolean(false);out.writeBoolean(false);
+        }
+        assertArrayEquals(buf.toByteArray(),legacy);
+        installGenerationFixtures();
+        port.write(legacy);
+        assertNull(port.generation());assertArrayEquals(legacy,port.read());
+        assertEquals("keep",prefs.getString("unrelated",null));
+    }
+
+    @Test public void malformedGenerationAndUnknownVersionRejectWithoutMutation()throws Exception {
+        installGenerationFixtures();byte[] before=port.read();
+        Map<String,Object> invalid=new HashMap<>();
+        for(Object bad:new Object[]{"1-1-1-1-1","00000000-0000-4000-8000-00000000000A",42L,"",null}){
+            invalid.put(RestoreSettingsPort.GENERATION,bad);
+            rejected(()->RestoreSettingsPort.encode(invalid));
+        }
+        byte[] unknown=before.clone();unknown[3]=99;
+        rejected(()->port.write(unknown));
+        byte[] truncated=Arrays.copyOf(before,before.length-1);
+        rejected(()->port.write(truncated));
+        assertArrayEquals(before,port.read());assertEquals(GEN_OLD,port.generation());
+    }
+
+    @Test public void targetGenerationIgnoresImportedUuidAndSchedulerState()throws Exception {
+        installGenerationFixtures();
+        Map<String,Object> incoming=new HashMap<>();
+        for(String key:new String[]{"checks","turns","sprays","nest_checks"})incoming.put(key,"09:00");
+        incoming.put("notifications",true);incoming.put(RestoreSettingsPort.GENERATION,GEN_NEW.toString());
+        incoming.put("next_alarm_at",999L);incoming.put("unrelated","overwrite");
+        rejected(()->RestoreSettingsPort.target(incoming,null));
+        byte[] target=RestoreSettingsPort.target(incoming,GEN_OLD);
+        port.write(target);
+        UUID issued=port.generation();assertNotNull(issued);assertNotEquals(GEN_OLD,issued);
+        assertNotEquals(GEN_NEW,issued);assertFalse(prefs.contains("next_alarm_at"));
+        assertEquals("keep",prefs.getString("unrelated",null));assertArrayEquals(target,port.read());
+    }
+
+    @Test public void generationTokenChangesOnlyAfterVerifiedRestoreOutcome()throws Exception {
+        installGenerationFixtures();
+        DataAccessCoordinator coordinator=new DataAccessCoordinator();
+        try(DataAccessCoordinator.Lease lease=coordinator.claim(coordinator.tryReserve(DataAccessCoordinator.Work.RECOVERY))){
+            assertEquals(NONE,storage(null).readPhase());lease.finishVerified(port.generation());
+        }
+        DataAccessCoordinator.Token token;
+        try(DataAccessCoordinator.Lease lease=coordinator.tryShort()){token=lease.capture();}
+        try(DataAccessCoordinator.Lease lease=coordinator.claim(coordinator.tryReserve(DataAccessCoordinator.Work.RESTORE))){
+            RestoreFileStorage s=storage(newSettings);s.prepare();s.publish(NONE,PENDING);
+            s.applyIncubation();s.applyFarm();s.applySettings();
+            assertNull(coordinator.tryShort(token));assertEquals(GEN_NEW,port.generation());
+        }
+        assertEquals(DataAccessCoordinator.State.RECOVERY_REQUIRED,coordinator.state());
+        try(DataAccessCoordinator.Lease lease=coordinator.claim(coordinator.tryReserve(DataAccessCoordinator.Work.RECOVERY))){
+            assertEquals(OLD_GENERATION,new RestoreProtocol(storage(null)).recover());
+            assertEquals(NONE,storage(null).readPhase());lease.finishVerified(port.generation());
+        }
+        assertNull(coordinator.tryShort(token));
+        try(DataAccessCoordinator.Lease lease=coordinator.tryShort()){assertEquals(GEN_OLD,lease.capture().generation());}
+        assertGeneration(false);
+    }
 }

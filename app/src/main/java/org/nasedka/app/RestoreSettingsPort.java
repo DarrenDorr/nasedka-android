@@ -4,6 +4,8 @@ import android.content.SharedPreferences;
 import java.io.*;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.UUID;
 
 /** Canonical encoding of managed fields only; unrelated preferences are untouched.
  * No implicit defaults: absent is distinct from present. Not wired to production. */
@@ -11,14 +13,45 @@ final class RestoreSettingsPort implements RestoreFileStorage.SettingsPort {
     private static final String[] KEYS={"checks","turns","sprays","nest_checks","notifications",
             "next_alarm_at","last_delivered_alarm_at","farm_task_next","farm_task_delivered_at"};
     private static final int MAGIC=0x4e535032;
+    private static final int GENERATION_MAGIC=0x4e535033;
+    static final String GENERATION="data_generation";
     private final SharedPreferences prefs;
     RestoreSettingsPort(SharedPreferences prefs){this.prefs=java.util.Objects.requireNonNull(prefs);}
     @Override public byte[] read() throws IOException {return encode(prefs.getAll());}
 
+    static UUID generation(Map<String,?> values)throws IOException {
+        if(!values.containsKey(GENERATION))return null;
+        Object raw=values.get(GENERATION);
+        if(!(raw instanceof String))throw new IOException("Invalid data generation");
+        try{
+            UUID uuid=UUID.fromString((String)raw);
+            if(!uuid.toString().equals(raw))throw new IllegalArgumentException("Noncanonical UUID");
+            return uuid;
+        }catch(IllegalArgumentException e){throw new IOException("Invalid data generation",e);}
+    }
+    UUID generation()throws IOException{return generation(prefs.getAll());}
+
+    /** Caller must first validate the public backup; never import its generation. */
+    static byte[] target(Map<String,?> validatedPublicSettings, UUID previous)throws IOException {
+        if(previous==null)throw new IOException("Persistent generation not initialized");
+        Map<String,Object> next=new HashMap<>();
+        for(int i=0;i<5;i++){
+            String key=KEYS[i];
+            if(!validatedPublicSettings.containsKey(key))throw new IOException("Missing validated setting");
+            next.put(key,validatedPublicSettings.get(key));
+        }
+        UUID fresh;
+        do{fresh=UUID.randomUUID();}while(fresh.equals(previous));
+        next.put(GENERATION,fresh.toString());
+        // Managed scheduler timestamps absent by design; no external UUID accepted.
+        return encode(next);
+    }
+
     static byte[] encode(Map<String,?> values) throws IOException {
+        UUID generation=generation(values);
         ByteArrayOutputStream bytes=new ByteArrayOutputStream();
         try(DataOutputStream out=new DataOutputStream(bytes)){
-            out.writeInt(MAGIC);
+            out.writeInt(generation==null?MAGIC:GENERATION_MAGIC);
             for(int i=0;i<KEYS.length;i++){
                 Object value=values.get(KEYS[i]);
                 if(!values.containsKey(KEYS[i])){out.writeBoolean(false);continue;}
@@ -34,6 +67,7 @@ final class RestoreSettingsPort implements RestoreFileStorage.SettingsPort {
                     out.writeLong((Long)value);
                 }
             }
+            if(generation!=null)out.writeUTF(generation.toString());
         }
         return bytes.toByteArray();
     }
@@ -41,7 +75,8 @@ final class RestoreSettingsPort implements RestoreFileStorage.SettingsPort {
         if(bytes==null||bytes.length>16384)throw new IOException("Invalid settings snapshot");
         java.util.Map<String,Object> values=new java.util.HashMap<>();
         try(DataInputStream in=new DataInputStream(new ByteArrayInputStream(bytes))){
-            if(in.readInt()!=MAGIC)throw new IOException("Invalid settings version");
+            int magic=in.readInt();
+            if(magic!=MAGIC && magic!=GENERATION_MAGIC)throw new IOException("Invalid settings version");
             for(int i=0;i<KEYS.length;i++)if(in.readBoolean()){
                 Object value;
                 if(i<4)value=in.readUTF();
@@ -49,6 +84,7 @@ final class RestoreSettingsPort implements RestoreFileStorage.SettingsPort {
                 else value=in.readLong();
                 values.put(KEYS[i],value);
             }
+            if(magic==GENERATION_MAGIC)values.put(GENERATION,in.readUTF());
             if(in.read()!=-1||!Arrays.equals(bytes,encode(values)))throw new IOException("Noncanonical settings snapshot");
         }
         SharedPreferences.Editor edit=prefs.edit();
@@ -59,6 +95,9 @@ final class RestoreSettingsPort implements RestoreFileStorage.SettingsPort {
             else if(i==4)edit.putBoolean(key,(Boolean)value);
             else edit.putLong(key,(Long)value);
         }
+        if(values.containsKey(GENERATION))edit.putString(GENERATION,(String)values.get(GENERATION));
+        else edit.remove(GENERATION); // historical snapshot has explicitly absent generation
         if(!edit.commit())throw new IOException("Settings commit failed");
+        if(!Arrays.equals(bytes,read()))throw new IOException("Settings verification failed");
     }
 }

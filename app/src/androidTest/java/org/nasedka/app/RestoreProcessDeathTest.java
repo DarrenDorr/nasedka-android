@@ -33,7 +33,9 @@ public class RestoreProcessDeathTest {
     private SharedPreferences prefs(String s){return context().getSharedPreferences("r1_crash_"+s,Context.MODE_PRIVATE);}
     private static byte[] settings(boolean next)throws IOException{
         Map<String,Object> m=new HashMap<>();m.put("checks",next?"09:00":"08:00");m.put("notifications",!next);
-        if(!next)m.put("next_alarm_at",42L);return RestoreSettingsPort.encode(m);
+        if(!next)m.put("next_alarm_at",42L);
+        m.put(RestoreSettingsPort.GENERATION,next?"00000000-0000-4000-8000-000000000002":"00000000-0000-4000-8000-000000000001");
+        return RestoreSettingsPort.encode(m);
     }
     private static void db(Path p,String value)throws IOException{
         try(SQLiteDatabase d=SQLiteDatabase.openOrCreateDatabase(p.toFile(),null)){

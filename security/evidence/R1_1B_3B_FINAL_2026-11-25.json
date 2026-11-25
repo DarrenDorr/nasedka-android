@@ -1,0 +1,139 @@
+{
+  "stage": "R1.1b-3b",
+  "tested_commit": "bc9effa7fac03bae1b8636b524cdf3571503b780",
+  "gate": "PASS_R1_1B_3B_ISOLATED_SCOPE",
+  "build": {
+    "run": 45558879096,
+    "job": 139017478432,
+    "result": "PASS",
+    "jvm": {
+      "artifact": 14996428384,
+      "sha256": "9d5b5eb3b4c620ddb59ce4ec35ea59fbf8beca7bbd2e4c47457f8bf793d04f74",
+      "suites": {
+        "DataAccessCoordinatorTest": {
+          "count": 13,
+          "sha256": "3e2ec56cf689511fc09346375f9d1098f6bb530e03cd22e1047ed70ffc588d87",
+          "methods": [
+            "ticketTransferredAndClaimedOnlyOnce",
+            "cancellationRestoresOnlyOriginalUnclaimedState",
+            "shortAndSnapshotExceptionsReleaseButRestoreFailsClosed",
+            "foreignThreadCannotReleaseOrUseLease",
+            "nestedShortIsLifoAndCannotUpgrade",
+            "workerOwnershipSurvivesInitiatingThreadExit",
+            "reservationRaceAdmitsExactlyOneHeavyOperation",
+            "cancellationAndClaimRaceCannotReleaseActiveWork",
+            "staleTokenRejectedAfterRestoreAndRollbackEvenWithSameUuid",
+            "concurrentShortRejectsOtherThreadWithoutWaiting",
+            "startupAndUnresolvedRecoveryBlockOrdinaryAccess",
+            "oldLeaseDoubleCloseCannotReleaseNewOperation",
+            "tokenAdmissionIsAtomicAgainstRestoreReservation"
+          ]
+        },
+        "RestoreJournalTest": {
+          "count": 8,
+          "sha256": "4b85d524f5e6a133d8f7635f058805c3b31ef73b0c2613edcf7fe22970467005"
+        },
+        "RestoreProtocolTest": {
+          "count": 9,
+          "sha256": "ad0738c2031e63c15e0abfc2d02ae2405b1fc0a6d8cc63ac821ce1a7e5cb18c0"
+        }
+      }
+    },
+    "linux_enospc": {
+      "artifact": 14996453140,
+      "sha256": "e6873ce869dd6b06c430612dcef205c4e302f47fb2bd7d94828fe0319d82e539",
+      "log_sha256": "e280cd70ca2f9f91edf2a8e5a41d29cdea7098f4a20ffb7656298ba5cc18e6ae",
+      "result": "PASS"
+    }
+  },
+  "android": {
+    "run": 45558879109,
+    "job": 139017604056,
+    "api": 35,
+    "result": "PASS",
+    "artifact": 14996403887,
+    "sha256": "a3e7981c343215045e6d6471bc1d76e5b72ae19e9e2d101ad7087e1b734a7757",
+    "xml_sha256": "7c6a608af063f5ee70d6a5ed4d39846cf29201ce9268fa221761fd398acdac6f",
+    "counts": {
+      "BackupReliabilityTest": 10,
+      "RestoreFileStorageTest": 22
+    },
+    "process_json_sha256": "71c7606c71508a0b20edb03e3eeeb3b2bdb98d9bed3bf17154f3da260888f318",
+    "cases": [
+      {
+        "name": "prepared",
+        "phase": "NONE",
+        "killed_pid": 4015,
+        "recovery_pid": 4053,
+        "outcome": "NO_PENDING",
+        "result": "PASS"
+      },
+      {
+        "name": "first-db",
+        "phase": "PENDING",
+        "killed_pid": 4126,
+        "recovery_pid": 4160,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "settings",
+        "phase": "PENDING",
+        "killed_pid": 4191,
+        "recovery_pid": 4224,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "committed",
+        "phase": "COMMITTED",
+        "killed_pid": 4265,
+        "recovery_pid": 4302,
+        "outcome": "NEW_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "rollback",
+        "phase": "PENDING",
+        "killed_pid": 4335,
+        "recovery_pid": 4390,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "rolled-back-cleanup",
+        "phase": "ROLLED_BACK",
+        "killed_pid": 4423,
+        "recovery_pid": 4459,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      }
+    ],
+    "enospc": {
+      "result": "PASS",
+      "capacity_bytes": 8388608,
+      "pid": 4546,
+      "witness_sha256": "73a0cc58becdcd06fa0a76f6f2ade5a19bebd0282b5d1c36eaaf69cbe38b8467",
+      "mount_sha256": "873730229eaf5750b9295b903250ac636bb2d3d65b5d9f69761cf196d9c124cb",
+      "instrumentation_sha256": "980bc01106f137e9b2fe607f7a02be0a87614338e141d666e5b743a402a92e95"
+    }
+  },
+  "ordinary_passed": 62,
+  "special_passed": 8,
+  "total_passed": 70,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "verification": "Three downloaded archive SHA-256 matched GitHub digest, all four XML parsed; no failure/error/skipped nodes; process JSON and Android witness/mount/log and Linux log checked. Exact method gates successful in both CI jobs.",
+  "limitations": [
+    "Coordinator not wired; C07/C08 JVM model only",
+    "No persistent generation/startup proof yet",
+    "R1-F01/F02 open",
+    "No physical power loss proof"
+  ],
+  "superseded_run": {
+    "id": 45558557547,
+    "result": "cancelled",
+    "scope": "documentation-only previous revision; superseded by successful current CI"
+  }
+}
