@@ -1,0 +1,358 @@
+{
+  "stage": "R1.1b-2b isolated storage closure",
+  "tested_commit": "3a0a2ee395ddc677e8a0a1aa1c21ad46703fd60a",
+  "verification_date": "2026-11-25",
+  "build": {
+    "run": 45548741852,
+    "job": 138984545222,
+    "result": "PASS",
+    "jvm": {
+      "artifact": 14991903506,
+      "archive_bytes": 1316,
+      "archive_sha256": "e62ae91049be1930b04107e7e1232100ab54e9a9e504c234c24f145d2ad37aba",
+      "xml_sha256": {
+        "RestoreJournalTest": "c889e95b1de491dc9a37dd20c4f35c8682c04a6e2a9e3b4eb3f75a45305e19c4",
+        "RestoreProtocolTest": "4f52133cc45ba8dd26adef2d25a969b6f4282a241b5c2c877e37d641bd9e0079"
+      },
+      "count": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "linux_enospc": {
+      "artifact": 14991724784,
+      "archive_bytes": 247,
+      "archive_sha256": "545d3eeffe2901a0b6803fb5642c111ce8e2cac46d7019e30968f9eadb46f8e1",
+      "log_sha256": "e280cd70ca2f9f91edf2a8e5a41d29cdea7098f4a20ffb7656298ba5cc18e6ae",
+      "log": [
+        "Actual kernel ENOSPC during restore temp write; PENDING and both live files intact",
+        "R1 bounded Linux tmpfs ENOSPC: PASS"
+      ],
+      "result": "PASS",
+      "scope": "isolated Linux tmpfs, in-memory settings"
+    }
+  },
+  "android": {
+    "run": 45548741811,
+    "job": 138984544963,
+    "result": "PASS",
+    "api": 35,
+    "artifact": 14992677653,
+    "archive_bytes": 12262,
+    "archive_sha256": "7d7b602c80c1f6f774f5627f30c9469286a4236b0d214dbb0914577c6d7c0452",
+    "xml_sha256": "620fc916bf2d0ec1da78eea5567b7a7a257c74cbc62bea6e9e05f3a4c75d9369",
+    "count": 32,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "process_json_sha256": "eed361c4814e4faad4165f8ddf19ee631384f5fd04a4f7631b653b62280d4657",
+    "process_cases": [
+      {
+        "name": "prepared",
+        "phase": "NONE",
+        "killed_pid": 4059,
+        "recovery_pid": 4099,
+        "outcome": "NO_PENDING",
+        "result": "PASS"
+      },
+      {
+        "name": "first-db",
+        "phase": "PENDING",
+        "killed_pid": 4134,
+        "recovery_pid": 4177,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "settings",
+        "phase": "PENDING",
+        "killed_pid": 4218,
+        "recovery_pid": 4252,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "committed",
+        "phase": "COMMITTED",
+        "killed_pid": 4331,
+        "recovery_pid": 4364,
+        "outcome": "NEW_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "rollback",
+        "phase": "PENDING",
+        "killed_pid": 4400,
+        "recovery_pid": 4440,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "rolled-back-cleanup",
+        "phase": "ROLLED_BACK",
+        "killed_pid": 4488,
+        "recovery_pid": 4523,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      }
+    ],
+    "enospc": {
+      "result": "PASS",
+      "capacity_bytes": 8388608,
+      "pid": 4637,
+      "mount_sha256": "873730229eaf5750b9295b903250ac636bb2d3d65b5d9f69761cf196d9c124cb",
+      "witness_sha256": "336aaf7f04f20d0235040804b2ef56697936a3704a68ffc71a6ae0ebad4e24d5",
+      "instrumentation_log_sha256": "e1dc35638ec44be63f95c9ad43de2eda4a52a1a2c18adbcdae847998d17fe54b",
+      "witness": "ANDROID_ENOSPC_PASS 8388608 4637",
+      "scope": "Android API35 isolated tmpfs; SELinux Enforcing; prefs on regular app partition"
+    }
+  },
+  "suites": [
+    {
+      "name": "RestoreJournalTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "methods": [
+        {
+          "method": "missingDirectoryIsNotAnEmptyJournal",
+          "result": "PASS"
+        },
+        {
+          "method": "commitSurvivesReopenAndClearsOnlyTerminal",
+          "result": "PASS"
+        },
+        {
+          "method": "oversizedOrNonRegularJournalFailsClosed",
+          "result": "PASS"
+        },
+        {
+          "method": "wrongGenerationOrHashesCannotPublishOrClear",
+          "result": "PASS"
+        },
+        {
+          "method": "damagedJournalIsNotTreatedAsMissing",
+          "result": "PASS"
+        },
+        {
+          "method": "rollbackTerminalSurvivesReopen",
+          "result": "PASS"
+        },
+        {
+          "method": "orphanTemporaryDoesNotOverrideAuthoritativeJournal",
+          "result": "PASS"
+        },
+        {
+          "method": "invalidTransitionsDoNotChangeJournal",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "name": "RestoreProtocolTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "methods": [
+        {
+          "method": "pendingRestoreRejectsAnotherRestoreWithoutWriting",
+          "result": "PASS"
+        },
+        {
+          "method": "settingsCommitFailureDoesNotCommitDatabases",
+          "result": "PASS"
+        },
+        {
+          "method": "corruptCommittedGenerationDoesNotCleanupOrRollback",
+          "result": "PASS"
+        },
+        {
+          "method": "successfulRestoreCommitsAllThreeAndClearsJournal",
+          "result": "PASS"
+        },
+        {
+          "method": "repeatedInterruptionDuringRollbackIsRecoverable",
+          "result": "PASS"
+        },
+        {
+          "method": "beforeAndAfterEveryRestoreBoundaryRecoversCorrectGeneration",
+          "result": "PASS"
+        },
+        {
+          "method": "committedCleanupFailureNeverRollsBack",
+          "result": "PASS"
+        },
+        {
+          "method": "missingRollbackCopiesRemainPending",
+          "result": "PASS"
+        },
+        {
+          "method": "corruptJournalFailsClosed",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "name": "BackupReliabilityTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "methods": [
+        {
+          "method": "legacyOnlyHatchedAtDefaultIsNormalized",
+          "result": "PASS"
+        },
+        {
+          "method": "v2MissingAnyTableIsRejected",
+          "result": "PASS"
+        },
+        {
+          "method": "v1OnlyAbsentNotesAllowed",
+          "result": "PASS"
+        },
+        {
+          "method": "farmV1BackupMigratesWithoutNotes",
+          "result": "PASS"
+        },
+        {
+          "method": "incV1ReconstructedMigrationPreservesRows",
+          "result": "PASS"
+        },
+        {
+          "method": "missingNullAndNonIntegerRowFieldsRejectedWithoutPartialInsert",
+          "result": "PASS"
+        },
+        {
+          "method": "coercedVersionsAndSettingsRejected",
+          "result": "PASS"
+        },
+        {
+          "method": "brokenTransferReferencesAndQuantityRejected",
+          "result": "PASS"
+        },
+        {
+          "method": "farmV1MigrationPreservesRowsAndIds",
+          "result": "PASS"
+        },
+        {
+          "method": "currentRoundTripAllFourteenTables",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "name": "RestoreFileStorageTest",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "methods": [
+        {
+          "method": "ambiguousJournalRemovalRequiresDurableAbsence",
+          "result": "PASS"
+        },
+        {
+          "method": "ambiguousCommittedForceRetainsCopiesUntilResynced",
+          "result": "PASS"
+        },
+        {
+          "method": "recoverAfterOneFileReplacement",
+          "result": "PASS"
+        },
+        {
+          "method": "realWriteDenialDuringApplyRetainsPending",
+          "result": "PASS"
+        },
+        {
+          "method": "preparedWalPreservesCommittedRows",
+          "result": "PASS"
+        },
+        {
+          "method": "missingSqliteIsNotCreatedByPreparation",
+          "result": "PASS"
+        },
+        {
+          "method": "restoreTwoSqliteFilesAndSettings",
+          "result": "PASS"
+        },
+        {
+          "method": "legacyAmbiguousOrMalformedMarkerPreservesFiles",
+          "result": "PASS"
+        },
+        {
+          "method": "repeatedRecoveryAfterPartialRollback",
+          "result": "PASS"
+        },
+        {
+          "method": "realWriteDenialDuringCommitPublicationRollsBack",
+          "result": "PASS"
+        },
+        {
+          "method": "settingsFailureAfterWriteStillRollsBack",
+          "result": "PASS"
+        },
+        {
+          "method": "ambiguousRolledBackForceRetainsCopiesUntilResynced",
+          "result": "PASS"
+        },
+        {
+          "method": "failedSettingsWriteAfterBothDatabasesRecovers",
+          "result": "PASS"
+        },
+        {
+          "method": "legacyRecoveryValidatesRealVersionTwoSchemas",
+          "result": "PASS"
+        },
+        {
+          "method": "insufficientSpaceRejectsBeforeJournalOrLiveChanges",
+          "result": "PASS"
+        },
+        {
+          "method": "realWriteDenialDuringRollbackPreservesSources",
+          "result": "PASS"
+        },
+        {
+          "method": "legacyRecoveryRepeatsAfterFirstCopy",
+          "result": "PASS"
+        },
+        {
+          "method": "legacyConflictingJournalOrFailedValidationBlocksReplacement",
+          "result": "PASS"
+        },
+        {
+          "method": "committedRecoveryAfterPartialCleanupRetainsNewData",
+          "result": "PASS"
+        },
+        {
+          "method": "legacyRecoveryAcrossAllFiveRenamePrefixes",
+          "result": "PASS"
+        },
+        {
+          "method": "corruptRollbackSourceKeepsJournalAndOtherCopies",
+          "result": "PASS"
+        },
+        {
+          "method": "legacyMarkerAndSidecarsBlockBeforeMutation",
+          "result": "PASS"
+        }
+      ]
+    }
+  ],
+  "ordinary_passed": 49,
+  "special_passed": 8,
+  "total_passed": 57,
+  "not_run": 0,
+  "gate": "PASS_R1_1B_2B_ISOLATED_SCOPE",
+  "verification": "Downloaded and independently hashed three archives; checked all XML cases for failure/error/skipped, read Linux ENOSPC log, process-death JSON and Android mount/witness/instrumentation log. Both CI jobs and exact execution gates successful.",
+  "limitations": [
+    "No production wiring or concurrency barrier yet",
+    "Directory-force error tests inject IOException, not physical media failure",
+    "ENOSPC tested on bounded tmpfs, not entire device or SharedPreferences partition",
+    "No hardware power-loss claim; API35 emulator only",
+    "Legacy unknown histories remain fail closed; no recovery guarantee for missing legacy marker",
+    "Full B02-B05/B01-reg/B08, real upgrade M03 and release-device validation remain open"
+  ]
+}

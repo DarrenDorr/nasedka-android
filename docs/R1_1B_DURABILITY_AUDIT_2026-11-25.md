@@ -16,3 +16,6 @@
 
 ## Gate
 17 JVM + 32 Android + 6 process cases + 2 ENOSPC = 57. Новая редакция NOT_RUN. После подтверждения провести итоговый audit, не считать hardware power loss доказанным. Production code modules changed only within isolated adapter and journal, not BackupStore/Application or UI. No merge or -3 until current gate PASS.
+
+## Итоговая проверка 25.11.2026 — PASS_R1_1B_2B_ISOLATED_SCOPE
+Commit `3a0a2ee395ddc677e8a0a1aa1c21ad46703fd60a`, build 45548741852 / job 138984545222 SUCCESS, Android 45548741811 / job 138984544963 SUCCESS. Три ZIP SHA-256 подтверждены, XML 17 JVM + 32 Android без ошибок и пропусков; JSON 6 independent process restarts и 2 actual bounded ENOSPC PASS. Все три A01/A02 methods PASS. [Evidence](../security/evidence/R1_1B_2B_FINAL_2026-11-25.json), [закрытие и ограничения](R1_1B_2B_CLOSURE_2026-11-25.md). Исторические HOLD/NOT_RUN записи выше сохраняются как история, текущий статус заменён. Изолированный scope закрыт; R1.1b-3 ещё не начат, production wiring/merge запрещены до совместной проверки. Physical power loss, full-device/SharedPreferences ENOSPC и реальный аппаратный I/O fault не доказаны; B02–B05 и full SAF/upgrade остаются открытыми в интеграционном объёме.
