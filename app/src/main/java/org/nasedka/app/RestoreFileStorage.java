@@ -31,6 +31,8 @@ final class RestoreFileStorage implements RestoreProtocol.Storage {
     private final Path root, work;
     private final Path[] live, old, staged;
     private final SettingsPort settings;
+    interface SpaceProbe { long available(Path path) throws IOException; }
+    private final SpaceProbe space;
     private final RestoreJournal journal;
     private final byte[] targetSettings;
     private RestoreJournal.Entry prepared;
@@ -38,6 +40,10 @@ final class RestoreFileStorage implements RestoreProtocol.Storage {
     // root is the private database directory; work must be reserved for this adapter.
     // Incoming DB files are supplied in work before restore. Recovery needs no target bytes.
     RestoreFileStorage(Path root, SettingsPort settings, byte[] targetSettings) throws IOException {
+        this(root,settings,targetSettings,path->path.toFile().getUsableSpace());
+    }
+    RestoreFileStorage(Path root, SettingsPort settings, byte[] targetSettings,SpaceProbe space) throws IOException {
+        this.space=java.util.Objects.requireNonNull(space);
         this.root = root.toAbsolutePath().normalize();
         this.work = this.root.resolve(WORK);
         directory(this.root); directory(work);
@@ -63,8 +69,9 @@ final class RestoreFileStorage implements RestoreProtocol.Storage {
         byte[] next = checkedPrefs(targetSettings);
         noSidecars(live[0]); noSidecars(live[1]);
         Path[] incoming = {work.resolve(INCOMING_INC),work.resolve(INCOMING_FARM)};
+        for(Path file:incoming) noSidecars(file);
+        checkSpace(incoming,previous.length,next.length);
         for (int i=0;i<2;i++) {
-            noSidecars(incoming[i]);
             copyDurable(live[i],old[i]);
             copyDurable(incoming[i],staged[i]);
         }
@@ -176,7 +183,21 @@ final class RestoreFileStorage implements RestoreProtocol.Storage {
     private static void noSidecars(Path db) throws IOException {
         for(String suffix:new String[]{"-wal","-shm","-journal"})
             if(exists(db.resolveSibling(db.getFileName()+suffix)))
-                throw new IOException("SQLite sidecar requires checkpoint and close");
+                throw new IOException("SQLite sidecar requires checkpoint and close: "+suffix);
+    }
+    // Conservative preflight: all four durable copies + largest replacement
+    // temp + prefs + reserve. Not a reservation; IO can still fail later.
+    private void checkSpace(Path[] incoming,int oldPrefs,int newPrefs) throws IOException {
+        long sum=1024L*1024L+oldPrefs+newPrefs, largest=0;
+        try {
+            for(Path[] files:new Path[][]{live,incoming})for(Path file:files){
+                regular(file);long size=Files.size(file);
+                sum=Math.addExact(sum,size);largest=Math.max(largest,size);
+            }
+            sum=Math.addExact(sum,largest);
+        }catch(ArithmeticException overflow){throw new IOException("Restore space estimate overflow",overflow);}
+        if(space.available(root)<sum||space.available(work)<sum)
+            throw new IOException("Insufficient space for safe restore");
     }
     private static void sync(Path dir) throws IOException {
         try(FileChannel c=FileChannel.open(dir,StandardOpenOption.READ)){c.force(true);}

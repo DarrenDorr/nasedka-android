@@ -46,11 +46,12 @@ public class RestoreFileStorageTest {
         }
     }
     // Real SQLite files with synthetic data, not the application databases.
-    private static void db(Path p,String value){
+    private static void db(Path p,String value)throws IOException{
         try(SQLiteDatabase d=SQLiteDatabase.openOrCreateDatabase(p.toFile(),null)){
             d.execSQL("CREATE TABLE sample (value TEXT NOT NULL)");
             d.execSQL("INSERT INTO sample(value) VALUES(?)",new Object[]{value});
         }
+        RestoreSqlitePreparation.prepareClosed(p);
     }
     private static String value(Path p){
         try(SQLiteDatabase d=SQLiteDatabase.openDatabase(p.toString(),null,SQLiteDatabase.OPEN_READONLY);
@@ -84,12 +85,14 @@ public class RestoreFileStorageTest {
         assertGeneration(false);assertEquals(NONE,storage(null).readPhase());
     }
     @Test public void failedSettingsWriteAfterBothDatabasesRecovers() throws Exception {
+        final boolean[] attempted={false};
         RestoreFileStorage.SettingsPort failing=new RestoreFileStorage.SettingsPort(){
             public byte[] read() throws IOException{return port.read();}
-            public void write(byte[] bytes) throws IOException{throw new IOException("Synthetic commit failure");}
+            public void write(byte[] bytes) throws IOException{attempted[0]=true;throw new IOException("Synthetic commit failure");}
         };
         RestoreFileStorage s=new RestoreFileStorage(root,failing,newSettings);
         rejected(()->new RestoreProtocol(s).restore());
+        assertTrue("Must reach settings write, not fail earlier",attempted[0]);
         assertEquals(PENDING,storage(null).readPhase());
         assertEquals(OLD_GENERATION,new RestoreProtocol(storage(null)).recover());
         assertGeneration(false);
@@ -111,5 +114,64 @@ public class RestoreFileStorageTest {
         Path wal=root.resolve("incuba.db-wal");Files.write(wal,new byte[]{1});
         rejected(()->new RestoreProtocol(storage(newSettings)).restore());assertTrue(Files.exists(wal));
         Files.delete(wal);assertGeneration(false);assertEquals(NONE,storage(null).readPhase());
+    }
+
+    @Test public void preparedWalPreservesCommittedRows() throws Exception {
+        Path p=work.resolve("wal-fixture.db");
+        try(SQLiteDatabase d=SQLiteDatabase.openOrCreateDatabase(p.toFile(),null)){
+            assertTrue(d.enableWriteAheadLogging());
+            d.execSQL("CREATE TABLE sample (value TEXT NOT NULL)");
+            d.execSQL("INSERT INTO sample(value) VALUES('committed-wal')");
+            try(Cursor c=d.rawQuery("PRAGMA journal_mode",null)){
+                assertTrue(c.moveToFirst());assertEquals("wal",c.getString(0).toLowerCase(Locale.ROOT));
+            }
+        }
+        RestoreSqlitePreparation.prepareClosed(p);
+        for(String suffix:new String[]{"-wal","-shm","-journal"})
+            assertFalse(Files.exists(p.resolveSibling(p.getFileName()+suffix)));
+        assertEquals("committed-wal",value(p));
+    }
+    @Test public void missingSqliteIsNotCreatedByPreparation() throws Exception {
+        Path missing=work.resolve("missing.db");
+        rejected(()->RestoreSqlitePreparation.prepareClosed(missing));
+        assertFalse(Files.exists(missing));
+    }
+    @Test public void insufficientSpaceRejectsBeforeJournalOrLiveChanges() throws Exception {
+        RestoreFileStorage s=new RestoreFileStorage(root,port,newSettings,path->0L);
+        try{new RestoreProtocol(s).restore();fail("Expected insufficient space");}
+        catch(IOException e){assertTrue(e.getMessage().contains("Insufficient space"));}
+        assertEquals(NONE,storage(null).readPhase());
+        assertFalse(Files.exists(work.resolve("old-inc.db")));
+        assertGeneration(false);
+    }
+    @Test public void settingsFailureAfterWriteStillRollsBack() throws Exception {
+        final boolean[] attempted={false};
+        RestoreFileStorage.SettingsPort failing=new RestoreFileStorage.SettingsPort(){
+            public byte[] read()throws IOException{return port.read();}
+            public void write(byte[] bytes)throws IOException{
+                port.write(bytes);attempted[0]=true;throw new IOException("Ambiguous settings write");
+            }
+        };
+        rejected(()->new RestoreProtocol(new RestoreFileStorage(root,failing,newSettings)).restore());
+        assertTrue(attempted[0]);assertArrayEquals(newSettings,port.read());
+        assertEquals(PENDING,storage(null).readPhase());
+        assertEquals(OLD_GENERATION,new RestoreProtocol(storage(null)).recover());
+        assertGeneration(false);
+    }
+    @Test public void repeatedRecoveryAfterPartialRollback() throws Exception {
+        RestoreFileStorage s=storage(newSettings);
+        s.prepare();s.publish(NONE,PENDING);s.applyIncubation();s.applyFarm();s.applySettings();
+        s.rollbackIncubation(); // simulate a restart during rollback, not real process kill
+        assertEquals(PENDING,storage(null).readPhase());
+        assertEquals(OLD_GENERATION,new RestoreProtocol(storage(null)).recover());
+        assertGeneration(false);
+    }
+    @Test public void committedRecoveryAfterPartialCleanupRetainsNewData() throws Exception {
+        RestoreFileStorage s=storage(newSettings);
+        s.prepare();s.publish(NONE,PENDING);s.applyIncubation();s.applyFarm();s.applySettings();
+        s.verifyNew();s.publish(PENDING,COMMITTED);
+        Files.delete(work.resolve("old-inc.db")); // interrupted terminal cleanup
+        assertEquals(NEW_GENERATION,new RestoreProtocol(storage(null)).recover());
+        assertGeneration(true);assertEquals(NONE,storage(null).readPhase());
     }
 }
