@@ -65,3 +65,7 @@ R1.1b-3 — coordinator, полный охват UI/receiver/backup/settings, ge
 R1.1b-4 — полный round-trip, regression, контрольный отчёт. Не включать частично защищённый restore в main до совместной проверки -2/-3.
 
 Следующий конкретный шаг после интеграции R1.1a: R1.1b-1, спроектировать интерфейс хранения и тесты state machine для всех фаз и отказов. Не менять UI и базы до этого. R1.1b implementation NOT_STARTED; пользовательские данные и релиз не допускаются.
+
+## 7. Интеграция исходной линии
+
+PR #7 объединён в main, merge commit `823e79ac63faca0752c785bdad696a10dd42477c`. Финальный build run 45533839572 SUCCESS; SQLite run 45533839632 SUCCESS (XML gate SUCCESS). Основой рабочей ветки является проверенный head 062c8b4, теперь предок main. R1.1b-0 подготовлен, production implementation не начата. Следующий шаг R1.1b-1. Проверки нового этапа NOT_RUN.
