@@ -24,3 +24,7 @@
 ## Контрольная ревизия
 
 CI c9d229e завершился SUCCESS: [run 45529467340](https://github.com/DarrenDorr/nasedka-android/actions/runs/45529467340), но connectedAndroidTest не исполнялся. Дополнительные находки, усиление проверки строк и новая проверка реального Android описаны в [контрольном отчёте](R1_1A_VERIFICATION_2026-11-25.md). Не считать данный этап пройденным без результатов новой проверки.
+
+## Подтверждение исполнения
+
+На проверенном commit `02afaf7` получен PASS 10/10 на Android 15 API 35, 0 failures/errors/skipped. Это закрывает ранее указанный NOT_RUN в рамках реализованных тестов, не расширяет их покрытие на полный restore/SAF или upgrade. См. [итоговый контроль](R1_1A_VERIFICATION_2026-11-25.md) и [evidence](../security/evidence/R1_1A_ANDROID_SQLITE_2026-11-25.json).
