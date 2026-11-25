@@ -165,22 +165,22 @@ final class RestoreFileStorage implements RestoreProtocol.Storage {
         removeRegular(p);removeRegular(temp(p));
     }
     private static Path temp(Path p){return p.resolveSibling(p.getFileName()+".r1tmp");}
-    private static boolean exists(Path p) throws IOException {
+    static boolean exists(Path p) throws IOException {
         try { Files.readAttributes(p,BasicFileAttributes.class,LinkOption.NOFOLLOW_LINKS);return true; }
         catch(NoSuchFileException absent){directory(p.getParent());return false;}
     }
-    private static void directory(Path p) throws IOException {
+    static void directory(Path p) throws IOException {
         if(!Files.readAttributes(p,BasicFileAttributes.class,LinkOption.NOFOLLOW_LINKS).isDirectory())
             throw new IOException("Invalid directory");
     }
-    private static void regular(Path p) throws IOException {
+    static void regular(Path p) throws IOException {
         if(!Files.readAttributes(p,BasicFileAttributes.class,LinkOption.NOFOLLOW_LINKS).isRegularFile())
             throw new IOException("Invalid restore file");
     }
     private static void removeRegular(Path p) throws IOException {
         if(exists(p)){regular(p);Files.delete(p);}
     }
-    private static void noSidecars(Path db) throws IOException {
+    static void noSidecars(Path db) throws IOException {
         for(String suffix:new String[]{"-wal","-shm","-journal"})
             if(exists(db.resolveSibling(db.getFileName()+suffix)))
                 throw new IOException("SQLite sidecar requires checkpoint and close: "+suffix);
@@ -199,7 +199,7 @@ final class RestoreFileStorage implements RestoreProtocol.Storage {
         if(space.available(root)<sum||space.available(work)<sum)
             throw new IOException("Insufficient space for safe restore");
     }
-    private static void sync(Path dir) throws IOException {
+    static void sync(Path dir) throws IOException {
         try(FileChannel c=FileChannel.open(dir,StandardOpenOption.READ)){c.force(true);}
     }
     private static void publishFile(Path t,Path target) throws IOException {
@@ -207,7 +207,7 @@ final class RestoreFileStorage implements RestoreProtocol.Storage {
         Files.move(t,target,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);
         sync(target.getParent());
     }
-    private static void copyDurable(Path source,Path target) throws IOException {
+    static void copyDurable(Path source,Path target) throws IOException {
         regular(source);
         Path t=temp(target);removeRegular(t);
         try(InputStream in=Files.newInputStream(source,LinkOption.NOFOLLOW_LINKS);
@@ -244,14 +244,14 @@ final class RestoreFileStorage implements RestoreProtocol.Storage {
         return out.toString();
     }
     private static String digest(byte[] bytes){return hex(sha().digest(bytes));}
-    private static String hash(Path p) throws IOException {
+    static String hash(Path p) throws IOException {
         regular(p);MessageDigest d=sha();
         try(InputStream in=Files.newInputStream(p,LinkOption.NOFOLLOW_LINKS)){
             byte[] b=new byte[65536];int n;while((n=in.read(b))!=-1)d.update(b,0,n);
         }
         return hex(d.digest());
     }
-    private static void check(Path p,String expected) throws IOException {
+    static void check(Path p,String expected) throws IOException {
         if(!hash(p).equals(expected))throw new IOException("Restore file digest mismatch");
     }
 }

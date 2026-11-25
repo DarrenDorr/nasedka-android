@@ -42,7 +42,11 @@
 
 **R1.1b-2b попытка 1 — HOLD:** build [45538262692](https://github.com/DarrenDorr/nasedka-android/actions/runs/45538262692) PASS (17 JVM); Android [45538262704](https://github.com/DarrenDorr/nasedka-android/actions/runs/45538262704) 15 executed, 11 PASS / 4 FAIL, XML проверен. Ошибка подготовки SQLite sidecars до PENDING. Добавлены явная SQLite preparation, preflight свободного места, 6 Android-тестов и точный XML gate 10+11. [Контрольный отчёт](R1_1B_FILE_STORAGE_2026-11-25.md).
 
-**СЛЕДУЮЩИЙ конкретный шаг:** проверить новый CI, 17 JVM + 21 Android; при FAIL исправить R1.1b-2b, не переходить к -3. Остаются legacy recovery, real process death и реальные I/O failure / ENOSPC, безопасный adapter ещё не интегрирован. R1.1b-2/-3 не выпускать раздельно. Дизайн не менять. Полный SAF, конкурентность, crash recovery и реальное обновление остаются в последующих испытаниях R1. 
+**R1.1b-2b попытка 2 — PASS в проверенном объёме:** 17 JVM + 21 Android, 0 failures/errors/skipped; [build](https://github.com/DarrenDorr/nasedka-android/actions/runs/45540385042), [Android](https://github.com/DarrenDorr/nasedka-android/actions/runs/45540384959), [evidence](../security/evidence/R1_1B_STORAGE_ATTEMPT2_2026-11-25.json). Обе ZIP SHA-256 совпали с GitHub, XML проверены.
+
+**R1.1b-2b продолжение:** изолированный RestoreLegacyRecovery с консервативным выбором прежней пары, проверкой v2/relations и сохранением всех старых копий. 5 дополнительных Android-тестов, включая все 5 префиксов старых rename; новый CI NOT_RUN.
+
+**СЛЕДУЮЩИЙ конкретный шаг:** подтвердить CI 17 JVM + 26 Android; затем actual process death / реальные I/O failure и ENOSPC. При неоднозначном старом marker — fail closed, никакого автоматического уничтожения данных. R1.1b-2b HOLD, -3 не начинать; production wiring не выполнен. Дизайн не менять. Полный SAF, конкурентность, crash recovery и реальное обновление остаются в последующих испытаниях R1. 
 
 **ПЛАН РЕАЛИЗАЦИИ (только по отдельному согласию на изменение приложения):** R1 — тесты резервных копий, миграций, фоновых уведомлений и сохранения черновиков; R2 — перенос точного визуального каркаса (4 кнопки и Главная); R3 — связанный учёт яиц, единый журнал и история исправлений. Не возвращаться к созданию нового дизайна без запроса.
 

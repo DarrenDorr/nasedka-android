@@ -174,4 +174,106 @@ public class RestoreFileStorageTest {
         assertEquals(NEW_GENERATION,new RestoreProtocol(storage(null)).recover());
         assertGeneration(true);assertEquals(NONE,storage(null).readPhase());
     }
+
+    private Path legacyMarker()throws IOException {
+        Path p=root.resolve(".nasedka_restore_pending");
+        Files.write(p,"rollback_if_interrupted".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+        return p;
+    }
+    private void legacyStage()throws IOException {
+        Files.copy(work.resolve(RestoreFileStorage.INCOMING_INC),root.resolve("incuba_restore_stage.db"));
+        Files.copy(work.resolve(RestoreFileStorage.INCOMING_FARM),root.resolve("farm_restore_stage.db"));
+    }
+    private Path legacyOld(String name){return root.resolve(name+".pre_restore.bak");}
+    private void moveLegacyPrefix(int count)throws IOException {
+        Path inc=root.resolve("incuba.db"),farm=root.resolve("nasedka_farm.db");
+        if(count>=1)Files.move(inc,legacyOld("incuba.db"));
+        if(count>=2)Files.move(farm,legacyOld("nasedka_farm.db"));
+        if(count>=3)Files.move(root.resolve("incuba_restore_stage.db"),inc);
+        if(count>=4)Files.move(root.resolve("farm_restore_stage.db"),farm);
+    }
+    private void verifyLegacySample(Path inc,Path farm)throws IOException {
+        if(!"old-inc".equals(value(inc))||!"old-farm".equals(value(farm)))
+            throw new IOException("Wrong legacy generation");
+    }
+    @Test public void legacyRecoveryAcrossAllFiveRenamePrefixes() throws Exception {
+        // Independent fixture for every prefix of historical four renames.
+        Path initialRoot=root;
+        try {
+            for(int prefix=0;prefix<=4;prefix++){
+                root=Files.createDirectory(initialRoot.resolve("legacy-"+prefix));
+                Files.copy(initialRoot.resolve("incuba.db"),root.resolve("incuba.db"));
+                Files.copy(initialRoot.resolve("nasedka_farm.db"),root.resolve("nasedka_farm.db"));
+                legacyStage();Path marker=legacyMarker();moveLegacyPrefix(prefix);
+                assertTrue(RestoreLegacyRecovery.recover(root,this::verifyLegacySample));
+                assertFalse(Files.exists(marker));assertGeneration(false);
+                if(prefix>=1)assertTrue(Files.exists(legacyOld("incuba.db")));
+                if(prefix>=2)assertTrue(Files.exists(legacyOld("nasedka_farm.db")));
+                assertFalse(RestoreLegacyRecovery.recover(root,this::verifyLegacySample));
+            }
+        }finally{root=initialRoot;}
+    }
+    @Test public void legacyRecoveryRepeatsAfterFirstCopy() throws Exception {
+        legacyStage();Path marker=legacyMarker();moveLegacyPrefix(4);
+        RestoreFileStorage.copyDurable(legacyOld("incuba.db"),root.resolve("incuba.db"));
+        assertTrue(Files.exists(marker));
+        assertTrue(RestoreLegacyRecovery.recover(root,this::verifyLegacySample));
+        assertGeneration(false);assertFalse(Files.exists(marker));
+        assertTrue(Files.exists(legacyOld("incuba.db")));assertTrue(Files.exists(legacyOld("nasedka_farm.db")));
+    }
+    @Test public void legacyAmbiguousOrMalformedMarkerPreservesFiles() throws Exception {
+        legacyStage();Path marker=legacyMarker();moveLegacyPrefix(4);
+        // Historical recovery may have consumed one old copy. Never guess.
+        Files.delete(legacyOld("incuba.db"));
+        byte[] inc=Files.readAllBytes(root.resolve("incuba.db"));
+        byte[] farm=Files.readAllBytes(root.resolve("nasedka_farm.db"));
+        rejected(()->RestoreLegacyRecovery.recover(root,this::verifyLegacySample));
+        assertTrue(Files.exists(marker));assertTrue(Files.exists(legacyOld("nasedka_farm.db")));
+        assertArrayEquals(inc,Files.readAllBytes(root.resolve("incuba.db")));
+        assertArrayEquals(farm,Files.readAllBytes(root.resolve("nasedka_farm.db")));
+        Files.write(marker,new byte[]{1});
+        rejected(()->RestoreLegacyRecovery.recover(root,this::verifyLegacySample));
+        assertArrayEquals(new byte[]{1},Files.readAllBytes(marker));
+    }
+    @Test public void legacyConflictingJournalOrFailedValidationBlocksReplacement() throws Exception {
+        legacyStage();
+        RestoreFileStorage s=storage(newSettings);s.prepare();s.publish(NONE,PENDING);
+        Path marker=legacyMarker();
+        rejected(()->RestoreLegacyRecovery.recover(root,this::verifyLegacySample));
+        assertTrue(Files.exists(marker));Files.delete(marker);
+        assertEquals(OLD_GENERATION,new RestoreProtocol(storage(null)).recover());
+        // Recovery cleaned the v2 incoming files; recreate only test fixtures.
+        db(work.resolve(RestoreFileStorage.INCOMING_INC),"new-inc");
+        db(work.resolve(RestoreFileStorage.INCOMING_FARM),"new-farm");
+        // Legacy stage files from before v2 remain distinct.
+        legacyMarker();moveLegacyPrefix(4);
+        byte[] before=Files.readAllBytes(root.resolve("incuba.db"));
+        rejected(()->RestoreLegacyRecovery.recover(root,(i,f)->{throw new IOException("Invalid pair");}));
+        assertArrayEquals(before,Files.readAllBytes(root.resolve("incuba.db")));
+        assertTrue(Files.exists(marker));assertTrue(Files.exists(legacyOld("incuba.db")));
+    }
+    @Test public void legacyRecoveryValidatesRealVersionTwoSchemas() throws Exception {
+        Path initialRoot=root;
+        try{
+            root=Files.createDirectory(initialRoot.resolve("legacy-schema"));
+            Path inc=root.resolve("incuba.db"),farm=root.resolve("nasedka_farm.db");
+            try(Db ih=new Db(c);FarmDb fh=new FarmDb(c);
+                SQLiteDatabase i=SQLiteDatabase.openOrCreateDatabase(inc.toFile(),null);
+                SQLiteDatabase f=SQLiteDatabase.openOrCreateDatabase(farm.toFile(),null)){
+                ih.onCreate(i);fh.onCreate(f);i.setVersion(2);f.setVersion(2);
+                i.execSQL("INSERT INTO batches(id,name,species,incubator_model,eggs,duration,started_at,manual_turn,spray,target_temp) VALUES(7,'old','chicken','test',4,21,1,0,0,37.5)");
+                f.execSQL("INSERT INTO flock(id,name,species,breed,place,since) VALUES(3,'old','chicken','test','test',1)");
+                f.execSQL("INSERT INTO incubator_transfers(batch_id,flock_id,quantity,at) VALUES(7,3,4,1)");
+            }
+            RestoreSqlitePreparation.prepareClosed(inc);RestoreSqlitePreparation.prepareClosed(farm);
+            legacyStage();Path marker=legacyMarker();moveLegacyPrefix(4);
+            assertTrue(RestoreLegacyRecovery.recover(root));assertFalse(Files.exists(marker));
+            try(SQLiteDatabase i=SQLiteDatabase.openDatabase(inc.toString(),null,SQLiteDatabase.OPEN_READONLY);
+                SQLiteDatabase f=SQLiteDatabase.openDatabase(farm.toString(),null,SQLiteDatabase.OPEN_READONLY);
+                Cursor row=f.rawQuery("SELECT batch_id,quantity FROM incubator_transfers",null)){
+                BackupStore.relations(i,f);assertTrue(row.moveToFirst());assertEquals(7,row.getInt(0));assertEquals(4,row.getInt(1));
+            }
+            assertArrayEquals(oldSettings,port.read());
+        }finally{root=initialRoot;}
+    }
 }

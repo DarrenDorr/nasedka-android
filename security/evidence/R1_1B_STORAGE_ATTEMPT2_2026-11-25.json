@@ -1,0 +1,50 @@
+{
+  "stage": "R1.1b-2b attempt 2",
+  "tested_commit": "6fc92091fba5e540f30c62dc5ecd943b4be76a51",
+  "build": {
+    "run": 45540385042,
+    "job": 138957194661,
+    "result": "PASS",
+    "artifact": 14988937391,
+    "archive_sha256": "8c8c2860b6a4651c87a7f305f6979bf3fde2a375d972acfa5668e9f7e79d5ef3",
+    "xml_sha256": {
+      "RestoreJournalTest": "0a5951e6083d57c8b207e1e97412554ff2ed258673e5877de3454f023f898023",
+      "RestoreProtocolTest": "d9a66217acaa80cbe4f4be840803679a315068531f7492f6bbd25cd794efaee3"
+    },
+    "counts": {
+      "RestoreJournalTest": 8,
+      "RestoreProtocolTest": 9
+    }
+  },
+  "android": {
+    "run": 45540384959,
+    "job": 138957195356,
+    "result": "PASS",
+    "api": 35,
+    "artifact": 14989640067,
+    "archive_sha256": "5f2b6f2928d2b58a0aa7c7c0b83636bcb3099d9ebd8cca112bd57ad25774f6b4",
+    "xml_sha256": "75127658bba12166f4dd45ff3c876e5a3e76e4c831f89779a19547975606e7fb",
+    "counts": {
+      "BackupReliabilityTest": 10,
+      "RestoreFileStorageTest": 11
+    },
+    "storage_methods": [
+      "restoreTwoSqliteFilesAndSettings",
+      "recoverAfterOneFileReplacement",
+      "failedSettingsWriteAfterBothDatabasesRecovers",
+      "corruptRollbackSourceKeepsJournalAndOtherCopies",
+      "legacyMarkerAndSidecarsBlockBeforeMutation",
+      "preparedWalPreservesCommittedRows",
+      "missingSqliteIsNotCreatedByPreparation",
+      "insufficientSpaceRejectsBeforeJournalOrLiveChanges",
+      "settingsFailureAfterWriteStillRollsBack",
+      "repeatedRecoveryAfterPartialRollback",
+      "committedRecoveryAfterPartialCleanupRetainsNewData"
+    ]
+  },
+  "tests": 38,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "gate": "PASS_TESTED_SCOPE; R1.1b-2b HOLD"
+}
