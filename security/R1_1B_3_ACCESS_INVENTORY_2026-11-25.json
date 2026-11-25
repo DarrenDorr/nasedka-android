@@ -1,0 +1,197 @@
+{
+  "stage": "R1.1b-3a",
+  "baseline_commit": "a3ff8f031caf5bb2712e9a82ad23fa395dcae450",
+  "baseline_tree": "5ec4a584183cda4feed0184c0fcb3809205c9dcd",
+  "scope": "Static source-review entry groups; anchors approximate line ranges at baseline, not proof of call coverage. Main/java paths relative to org/nasedka/app unless flavor/manifest prefix. No production code modified.",
+  "groups": [
+    {
+      "id": "A01",
+      "files": [
+        "MainActivity.java"
+      ],
+      "lines": "68–166; 192–203; 222–684; 767–981; 1227–1377; 1418–1467",
+      "role": "Lifecycle, render, navigation, incubation reads/writes, settings, dialogs, SAF/restore callbacks",
+      "boundary": "One render or complete accepted user callback (including DB handles, settings and required scheduling); no lease across dialog lifetime",
+      "guard": "Screen/form/SAF generation and view epoch; reject stale input, keep unsubmitted data and reopen explicitly",
+      "status": "OPEN"
+    },
+    {
+      "id": "A02",
+      "files": [
+        "FarmScreens.java"
+      ],
+      "lines": "53–94; 175–691",
+      "role": "Farm render, dialogs, flock/feed/finance/nest/task/egg movements and transfer, reports",
+      "boundary": "Complete render or form submit including cross-db lookup+mutation; not individual helper",
+      "guard": "Captured form token validated inside admission; no stale Batch/group/task ID or stale report",
+      "status": "OPEN"
+    },
+    {
+      "id": "A03",
+      "files": [
+        "Db.java",
+        "FarmDb.java"
+      ],
+      "lines": "Db 24–end; FarmDb 52–end",
+      "role": "All SQLiteOpenHelper opens, CRUD, migrations, transactions and cursor lifetime",
+      "boundary": "Require caller-owned operation context; assert at actual DB access; close helpers/cursors before releasing",
+      "guard": "Test-only isolated schema construction separately allowed, no runtime bypass or create-on-recovery",
+      "status": "OPEN"
+    },
+    {
+      "id": "A04",
+      "files": [
+        "BackupStore.java"
+      ],
+      "lines": "90–132; 226–end",
+      "role": "Snapshot, SAF export/read, legacy recover/switch, staging, restore",
+      "boundary": "SAF read/validate before exclusive restore; snapshot bytes under lease then SAF output outside; exclusively stage/prepare/restore/recover and close handles",
+      "guard": "No switchBoth/recover bypass; gate on validated journal state; no automatic mixed pair",
+      "status": "OPEN"
+    },
+    {
+      "id": "A05",
+      "files": [
+        "CsvExport.java"
+      ],
+      "lines": "19–end",
+      "role": "CSV read and SAF output currently shares DB lifetime",
+      "boundary": "Materialize immutable CSV bytes under lease; output outside lease",
+      "guard": "Capture export selection generation at picker launch and compare before read",
+      "status": "OPEN"
+    },
+    {
+      "id": "A06",
+      "files": [
+        "Prefs.java",
+        "RestoreSettingsPort.java"
+      ],
+      "lines": "Prefs 13–23; RestoreSettingsPort whole file",
+      "role": "Managed settings and other keys share incuba_settings XML; canonical old/new snapshot",
+      "boundary": "All app settings access/writes under admitted context; no exposed unguarded editor; critical generation/restore commit checked",
+      "guard": "New local UUID, absent vs present, no import from backup; preserve unrelated keys; versioned internal codec compatibility",
+      "status": "OPEN"
+    },
+    {
+      "id": "A07",
+      "files": [
+        "AlarmScheduler.java"
+      ],
+      "lines": "25–end, especially 64,96,127",
+      "role": "Incubation plan, tick, diagnostics, snooze, legacy pending intent cancellation",
+      "boundary": "Coordinator first, scheduler second; preferably remove static synchronized after coverage verified; nested same owner",
+      "guard": "Generation-qualified action identity; reschedule after recovery; no advance watermark when rejected",
+      "status": "OPEN"
+    },
+    {
+      "id": "A08",
+      "files": [
+        "FarmTaskScheduler.java"
+      ],
+      "lines": "29–end, especially 50,83 and nested Receiver",
+      "role": "Farm tasks, nest checks, deliver/reschedule, notifications, receiver",
+      "boundary": "Whole receive/deliver/reschedule logical operation; same owner for nesting",
+      "guard": "Versioned tick, regenerate schedule; reject old tick; no watermark mutation while busy",
+      "status": "OPEN"
+    },
+    {
+      "id": "A09",
+      "files": [
+        "ReminderReceiver.java",
+        "BootReceiver.java"
+      ],
+      "lines": "onReceive",
+      "role": "FIRE/DONE/SNOOZE/TICK/TEST, boot/time/timezone/package/exact-alarm changes",
+      "boundary": "Nonblocking try admission, bounded work; allowlist BootReceiver actions",
+      "guard": "DONE/SNOOZE stale rejected; busy leaves actionable notification and explicit retry; system ticks coalesce and reconstruct on READY",
+      "status": "OPEN"
+    },
+    {
+      "id": "A10",
+      "files": [
+        "Notifications.java",
+        "AlertDiagnostics.java"
+      ],
+      "lines": "Notifications 75–145; AlertDiagnostics 70–end",
+      "role": "Action and content PendingIntent, notification display/cancel, sound preview",
+      "boundary": "Data-derived notifications within admitted operation; system-only audio diagnostics separate",
+      "guard": "URI/request identity includes generation, extras alone insufficient; stale content intent safe navigation",
+      "status": "OPEN"
+    },
+    {
+      "id": "A11",
+      "files": [
+        "RemoteFeed.java",
+        "github/ChannelUpdater.java",
+        "play/ChannelUpdater.java",
+        "rustore/ChannelUpdater.java"
+      ],
+      "lines": "RemoteFeed 56–125; github ChannelUpdater 23–136",
+      "role": "Background network/update cache and download state in same prefs; callbacks render UI",
+      "boundary": "Network/download/hash outside coordinator; short guarded prefs read/write and callback re-admission; coalesce disposable cache",
+      "guard": "Do not retain stale activity or write managed keys; cannot bypass restore through same preferences file",
+      "status": "OPEN"
+    },
+    {
+      "id": "A12",
+      "files": [
+        "NasedkaApplication.java",
+        "main/AndroidManifest.xml",
+        "github/AndroidManifest.xml"
+      ],
+      "lines": "Application onCreate; manifest components",
+      "role": "Startup recovery, exported launcher/boot receiver, nonexported FileProvider",
+      "boundary": "Application-scoped STARTING gate before any data access; background recovery; validate merged manifests",
+      "guard": "No explicit android:process in source manifests, verify all merged variants; fail closed; distinguish fresh install from missing DB after restore",
+      "status": "OPEN"
+    },
+    {
+      "id": "A13",
+      "files": [
+        "RestoreProtocol.java",
+        "RestoreJournal.java",
+        "RestoreFileStorage.java",
+        "RestoreLegacyRecovery.java",
+        "RestoreSqlitePreparation.java"
+      ],
+      "lines": "whole isolated modules",
+      "role": "Verified storage boundary from -2a/-2b",
+      "boundary": "Only under exclusive restore/recovery ownership; no external calls in partial generation",
+      "guard": "Resolve legacy first only if no conflicting v2; verify old/new canonical prefs incl generation, check journal absence before READY",
+      "status": "OPEN"
+    }
+  ],
+  "reviewed_no_direct_storage_pattern": [
+    "Batch",
+    "DailyTimeline",
+    "FarmGlyph",
+    "FarmLogic",
+    "FarmOverview",
+    "IncubationPreparation",
+    "IncubationRecords",
+    "NestCarePlan",
+    "Plan",
+    "Reminder",
+    "Ui",
+    "VentilationAdvice",
+    "VersionCompare"
+  ],
+  "verified_source_manifests": [
+    "app/src/main/AndroidManifest.xml",
+    "app/src/github/AndroidManifest.xml"
+  ],
+  "limitations": [
+    "Initial broad automated scan hit tool-call ceiling; targeted source reads covered listed groups and helper scan. Not a full generated bytecode/merged manifest or callback graph proof.",
+    "Exact per-call-site mapping and executable coverage gate needed before integration.",
+    "No runtime tests of coordinator yet."
+  ],
+  "baseline_ci": {
+    "commit": "a3ff8f031caf5bb2712e9a82ad23fa395dcae450",
+    "runs": [
+      45549364572,
+      45549364563
+    ],
+    "status": "SUCCESS"
+  },
+  "status": "DESIGN_RECORDED"
+}
