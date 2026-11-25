@@ -59,7 +59,7 @@ jobs:
             echo "EPHEMERAL_DEBUG_CERTIFICATE__UPGRADES_NOT_GUARANTEED" > signing-status.txt
           fi
       - name: Test and build all three debug variants
-        run: gradle --no-daemon testGithubDebugUnitTest assembleGithubDebug assemblePlayDebug assembleRustoreDebug
+        run: gradle --no-daemon testGithubDebugUnitTest assembleGithubDebug assemblePlayDebug assembleRustoreDebug assembleGithubDebugAndroidTest
       - name: Save GitHub APK for installation tests
         uses: actions/upload-artifact@v4
         with:

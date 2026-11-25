@@ -14,7 +14,7 @@ android {
         targetSdk 36
         versionCode 16
         versionName '0.9.0-dev'
-        testInstrumentationRunner 'android.test.InstrumentationTestRunner'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
 
     flavorDimensions 'distribution'
@@ -56,4 +56,6 @@ android {
 dependencies {
     githubImplementation 'androidx.core:core:1.15.0'
     testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
 }

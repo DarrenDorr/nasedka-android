@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "stage": "R1.1a",
+  "tested_commit": "02afaf7c98940743cc687f091547a8cb619a36f0",
+  "build_run": {
+    "id": 45533374043,
+    "job_id": 138933946869,
+    "conclusion": "success"
+  },
+  "instrumentation_run": {
+    "id": 45533374022,
+    "job_id": 138933947085,
+    "conclusion": "success",
+    "xml_gate": "success",
+    "api": 35,
+    "android": "15",
+    "device": "emulator-5554",
+    "flavor": "github",
+    "suite": "org.nasedka.app.BackupReliabilityTest",
+    "timestamp_utc": "2026-11-25T02:32:45Z",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "reported_suite_seconds": 1.444,
+    "cases": [
+      {
+        "name": "legacyOnlyHatchedAtDefaultIsNormalized",
+        "time_seconds": 0.015,
+        "result": "PASS"
+      },
+      {
+        "name": "v2MissingAnyTableIsRejected",
+        "time_seconds": 0.001,
+        "result": "PASS"
+      },
+      {
+        "name": "v1OnlyAbsentNotesAllowed",
+        "time_seconds": 0.001,
+        "result": "PASS"
+      },
+      {
+        "name": "farmV1BackupMigratesWithoutNotes",
+        "time_seconds": 0.001,
+        "result": "PASS"
+      },
+      {
+        "name": "incV1ReconstructedMigrationPreservesRows",
+        "time_seconds": 0.028,
+        "result": "PASS"
+      },
+      {
+        "name": "missingNullAndNonIntegerRowFieldsRejectedWithoutPartialInsert",
+        "time_seconds": 0.053,
+        "result": "PASS"
+      },
+      {
+        "name": "coercedVersionsAndSettingsRejected",
+        "time_seconds": 0.029,
+        "result": "PASS"
+      },
+      {
+        "name": "brokenTransferReferencesAndQuantityRejected",
+        "time_seconds": 0.028,
+        "result": "PASS"
+      },
+      {
+        "name": "farmV1MigrationPreservesRowsAndIds",
+        "time_seconds": 0.03,
+        "result": "PASS"
+      },
+      {
+        "name": "currentRoundTripAllFourteenTables",
+        "time_seconds": 0.2,
+        "result": "PASS"
+      }
+    ]
+  },
+  "artifact": {
+    "id": 14986465172,
+    "archive_bytes": 4894,
+    "archive_sha256": "64353e50cd4da1cdcda34f9896620bafacafaa5291032e579ba5b4c11a280628",
+    "xml_sha256": "80756c61458c4e4c510761bee64bf7d2409070739301fc98ef08f31125923f02",
+    "xml_bytes": 1642,
+    "source": "downloaded and parsed; normalized evidence, not byte-identical XML",
+    "expires_utc": "2026-11-28T02:32:47Z"
+  },
+  "gate": "PASS_R1_1A_SCOPE_ONLY",
+  "remaining": [
+    "B01 full SAF/restore",
+    "B02–B05 snapshot concurrency and crash recovery",
+    "B08 SAF interruption",
+    "M03 same-certificate APK upgrade",
+    "remaining business invariants and physical OEM validation"
+  ]
+}

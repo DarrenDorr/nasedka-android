@@ -82,7 +82,7 @@ public final class BackupStore {
         }
         return rows;
     }
-    private static JSONObject all(SQLiteDatabase db,String[] tables) throws Exception {
+    static JSONObject all(SQLiteDatabase db,String[] tables) throws Exception {
         JSONObject out=new JSONObject();
         for(String table:tables)out.put(table,data(db,table));
         return out;
@@ -131,51 +131,85 @@ public final class BackupStore {
         }
     }
     private static String string(JSONObject o,String key,int max) throws Exception {
-        String s=o.getString(key);
-        if(s==null||s.length()>max)throw new IllegalArgumentException("Некорректное поле "+key);
-        return s;
+        Object value=o.get(key);
+        if(!(value instanceof String)||((String)value).length()>max)
+            throw new IllegalArgumentException("Некорректное поле "+key);
+        return (String)value;
     }
-    private static void validate(JSONObject root) throws Exception {
-        if(!FORMAT.equals(root.optString("format"))||root.optInt("version")!=VERSION
-                ||root.optInt("incuba_version")!=2
-                ||(root.optInt("farm_version")!=1&&root.optInt("farm_version")!=2))
+    private static long integer(JSONObject o,String key) throws Exception {
+        Object value=o.get(key);
+        if(!(value instanceof Integer)&&!(value instanceof Long))
+            throw new IllegalArgumentException("Некорректное целое поле "+key);
+        return ((Number)value).longValue();
+    }
+    static void validate(JSONObject root) throws Exception {
+        long farmVersion=integer(root,"farm_version");
+        if(!FORMAT.equals(root.opt("format"))||integer(root,"version")!=VERSION
+                ||integer(root,"incuba_version")!=2
+                ||(farmVersion!=1&&farmVersion!=2))
             throw new IllegalArgumentException("Неподдерживаемая версия резервной копии.");
         JSONObject inc=root.getJSONObject("incubation"),farm=root.getJSONObject("farm");
         for(String t:INCUBATION)if(inc.getJSONArray(t).length()>100000)
             throw new IllegalArgumentException("Слишком много записей в "+t);
-        for(String t:FARM)if((farm.optJSONArray(t)==null?0:farm.getJSONArray(t).length())>100000)
+        // Only the historical farm v1 format may omit flock_notes. A present
+        // null/non-array is invalid even in v1, and v2 must include the table.
+        if(farmVersion==1 && !farm.has("flock_notes"))
+            farm.put("flock_notes",new JSONArray());
+        for(String t:FARM)if(farm.getJSONArray(t).length()>100000)
             throw new IllegalArgumentException("Слишком много записей в "+t);
+        // Normalize only the documented legacy column before strict row import.
+        if(farmVersion==1) {
+            JSONArray flocks=farm.getJSONArray("flock");
+            for(int i=0;i<flocks.length();i++) {
+                JSONObject row=flocks.getJSONObject(i);
+                if(!row.has("hatched_at"))row.put("hatched_at",0);
+            }
+        }
         JSONObject prefs=root.getJSONObject("settings");
         Prefs.times(string(prefs,"checks",100));Prefs.times(string(prefs,"turns",100));
         Prefs.times(string(prefs,"sprays",100));
-        Prefs.times(prefs.optString("nest_checks","09:00"));
+        if(!prefs.has("nest_checks"))prefs.put("nest_checks","09:00");
+        Prefs.times(string(prefs,"nest_checks",100));
         if(!prefs.has("notifications") || !(prefs.get("notifications") instanceof Boolean))
             throw new IllegalArgumentException("Неверные настройки уведомлений.");
     }
-    private static Map<String,String> columns(SQLiteDatabase db,String table) {
-        Map<String,String> out=new HashMap<>();
+    private static final class Column {
+        final String type;
+        final boolean required;
+        Column(String type,boolean required) {this.type=type;this.required=required;}
+    }
+    private static Map<String,Column> columns(SQLiteDatabase db,String table) {
+        Map<String,Column> out=new HashMap<>();
         try(Cursor c=db.rawQuery("PRAGMA table_info("+table+")",null)){
             while(c.moveToNext())
-                out.put(c.getString(1),c.getString(2).toUpperCase(java.util.Locale.ROOT));
+                out.put(c.getString(1),new Column(c.getString(2).toUpperCase(java.util.Locale.ROOT),
+                        c.getInt(3)!=0||c.getInt(5)!=0));
         }
         return out;
     }
     private static void importTable(SQLiteDatabase db,String table,JSONArray rows) throws Exception {
-        Map<String,String> types=columns(db,table);
+        Map<String,Column> types=columns(db,table);
         if(types.isEmpty())throw new IllegalArgumentException("Неизвестная таблица "+table);
         for(int i=0;i<rows.length();i++){
             JSONObject row=rows.getJSONObject(i);
+            // A complete backup stores every column, including explicit NULL.
+            // Missing/defaulted IDs and fields must not mutate restored facts.
+            for(String k:types.keySet())if(!row.has(k))
+                throw new IllegalArgumentException("Нет поля "+table+"."+k);
             ContentValues values=new ContentValues();
             Iterator<String> keys=row.keys();
             while(keys.hasNext()){
-                String k=keys.next(),type=types.get(k);
-                if(type==null)throw new IllegalArgumentException("Лишнее поле "+table+"."+k);
+                String k=keys.next();
+                Column column=types.get(k);
+                if(column==null)throw new IllegalArgumentException("Лишнее поле "+table+"."+k);
+                String type=column.type;
                 Object val=row.get(k);
-                if(val==JSONObject.NULL)values.putNull(k);
+                if(val==JSONObject.NULL) {
+                    if(column.required)throw new IllegalArgumentException("Пустое обязательное поле "+table+"."+k);
+                    values.putNull(k);
+                }
                 else if(type.contains("INT")){
-                    if(!(val instanceof Number)||val.toString().contains("."))
-                        throw new IllegalArgumentException("Неправильное целое число "+k);
-                    values.put(k,((Number)val).longValue());
+                    values.put(k,integer(row,k));
                 }else if(type.contains("REAL")||type.contains("FLOA")||type.contains("DOUB")){
                     if(!(val instanceof Number)||!Double.isFinite(((Number)val).doubleValue()))
                         throw new IllegalArgumentException("Неправильное число "+k);
@@ -189,17 +223,14 @@ public final class BackupStore {
             db.insertOrThrow(table,null,values);
         }
     }
-    private static void populate(SQLiteDatabase db,JSONObject data,String[] tables,int version)
+    static void populate(SQLiteDatabase db,JSONObject data,String[] tables,int version)
             throws Exception {
         db.beginTransaction();
         try {
             for(String t:tables) {
-                JSONArray rows=data.optJSONArray(t);
-                if(rows==null) {
-                    if("flock_notes".equals(t))rows=new JSONArray();
-                    else throw new IllegalArgumentException("Нет обязательной таблицы "+t);
-                }
-                importTable(db,t,rows);
+                // validate() normalizes the one permitted legacy omission.
+                // Never silently invent a missing table during staging.
+                importTable(db,t,data.getJSONArray(t));
             }
             db.setVersion(version);db.setTransactionSuccessful();
         }finally{db.endTransaction();}
@@ -211,7 +242,7 @@ public final class BackupStore {
     private static long count(SQLiteDatabase db,String query) {
         try(Cursor c=db.rawQuery(query,null)){c.moveToFirst();return c.getLong(0);}
     }
-    private static void relations(SQLiteDatabase inc,SQLiteDatabase farm) {
+    static void relations(SQLiteDatabase inc,SQLiteDatabase farm) {
         String[] checks={
             "SELECT COUNT(*) FROM entries WHERE batch_id NOT IN (SELECT id FROM batches)",
             "SELECT COUNT(*) FROM done WHERE batch_id NOT IN (SELECT id FROM batches)"};
@@ -223,6 +254,7 @@ public final class BackupStore {
             "SELECT COUNT(*) FROM feed_moves WHERE feed_id NOT IN (SELECT id FROM feeds)",
             "SELECT COUNT(*) FROM nest_notes WHERE nest_id NOT IN (SELECT id FROM nests)",
             "SELECT COUNT(*) FROM egg_harvest WHERE flock_id NOT IN (SELECT id FROM flock)",
+            "SELECT COUNT(*) FROM incubator_transfers WHERE flock_id NOT IN (SELECT id FROM flock) OR quantity<=0",
             "SELECT COUNT(*) FROM finances WHERE feed_move_id IS NOT NULL AND feed_move_id NOT IN (SELECT id FROM feed_moves)",
             "SELECT COUNT(*) FROM flock_moves WHERE delta=0",
             "SELECT COUNT(*) FROM feeds WHERE name=''",
