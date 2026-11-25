@@ -1,56 +1,56 @@
 # Реестр экранов и точных макетов «Наседки»
 
-**Состояние:** 2026-11-23. В архиве `Nasedka_Design_Vault_COMPLETE_2026-11-23.zip` находятся **43 уникальных исходных PNG** и `index/IMAGE_MANIFEST.csv` с полными путями, размерами, SHA-256 и уровнями утверждения. **В GitHub сейчас фиксируются текстовые связи; фактическая загрузка всех PNG ещё не подтверждена.**
+**Состояние:** 2026-11-23. В архиве `Nasedka_Design_Vault_COMPLETE_2026-11-23.zip` находятся **43 уникальных исходных PNG** и `index/IMAGE_MANIFEST.csv` с полными путями, размерами, SHA-256 и уровнями утверждения. **25.11.2026:** все 43 оригинала включены в GitHub; ниже ссылки на оригинальные файлы. Статусы согласования не изменены.
 
 ## Утверждённый визуальный эталон (LOCKED)
 
 | ID | Что является эталоном | Исходное имя PNG |
 |---|---|---|
-| UI-MASTER | Вся композиция, палитра, графика, структура 5 основных экранов | `наседка_фермерский_ui_концепт.png` |
-| UI-HOME | Главная без изменений дизайна | `Nasedka_Главная_утверждённый_шаблон.png` |
-| UI-INC | Инкубация без изменений дизайна | `Nasedka_Инкубация_эталон.png` |
+| UI-MASTER | Вся композиция, палитра, графика, структура 5 основных экранов | [наседка_фермерский_ui_концепт.png](assets/DES-042.png) |
+| UI-HOME | Главная без изменений дизайна | [Nasedka_Главная_утверждённый_шаблон.png](assets/DES-002.png) |
+| UI-INC | Инкубация без изменений дизайна | [Nasedka_Инкубация_эталон.png](assets/DES-003.png) |
 
 ## Согласованные модули и варианты (APPROVED_CONCEPT)
 
 | Экран / модуль | Путь пользователя и содержание | Сохранённый рисунок |
 |---|---|---|
-| M-01 Главная | Три KPI, Инкубация, Поголовье, Корма, Финансы, Отчёты; колокольчик; 4 вкладки | `Nasedka_Главная_утверждённый_шаблон.png` |
-| M-02 Инкубация | Активные/завершённые, карточка, график, задачи, дневник | `Nasedka_Инкубация_эталон.png` |
-| M-03 Выбор инкубатора | Тип/конкретная модель, затем вместимость, автоматический переворот и документированные опции | `a_detailed_colorful_ui_illustration_for_a_rural_p.png` |
-| M-04 Подготовка инкубатора | Постраничная инструкция по выбранной модели с ссылкой на официальный источник, отметками действий | `a_wide_colorful_promotional_ui_mockup_scene_a_bri.png`; `a_bright_highly_detailed_colorful_ui_illustratio.png` — дополнительные варианты |
-| M-05 Инкубационный дневник | Фактические измерения, овоскопирование, контроль воды, этапы и заметки | `a_wide_detailed_promotional_ui_mockup_image_in_ru.png` |
-| M-06 Итог инкубации | Не путать заложено/убрано/вылупилось/неопределённо; завершение партии | `a_bright_colorful_promotional_app_interface_scene.png`; `наседка_учёт_яиц_в_инкубации.png` |
-| M-07 Под наседкой | «Подготовить наседку» либо «Птица уже села», выбор исходов и даты | `a_detailed_colorful_ui_illustration_in_a_rustic_g.png`; `наседка_инструкции_и_наблюдение.png` |
-| M-08 Уход за наседкой | Ежедневная проверка, наблюдения, календарь, фактический вывод | `a_bright_detailed_app_ui_concept_image_in_russian.png` |
-| M-09 Курица с цыплятами | Кормление, вода, условия, постепенное знакомство со стадом | `a_wide_colorful_promotional_style_app_interface_g.png` |
-| M-10 Молодняк | Перенос один раз, карточка группы, возрастные рекомендации и наблюдения | `Nasedka_UI_Молодняк_перенос_и_уход_макет.png`; `a_wide_colorful_promotional_ui_mockup_in_russian.png` |
-| M-11 Поголовье | Группы, численность, приход, выбытие, перевод и история | `Nasedka_UI_Поголовье_макет_для_согласования.png` |
-| M-12 Корма и запасы | Список, карточка корма, покупка и расход с одной связанной финоперацией | `a_wide_high_detail_graphic_ui_mockup_of_a_mobile.png` |
-| M-13 Финансы | Доходы, расходы, новая операция, краткие итоги и наглядность | `a_richly_detailed_colorful_ui_mockup_composite_sh.png` |
-| M-14 Отчёты | Поголовье, яйценоскость, вывод, доходы/расходы, формулы, период | `a_highly_detailed_colorful_polished_ui_mockup_co.png` |
-| M-15 Журнал | Единая лента, поиск/фильтры, подробности/исправления, переключение календаря | `a_detailed_ui_design_poster_concept_art_for_a_mobi.png` |
-| M-16 Новости | Статьи, советы, новости/обновления разработчика, источники, офлайн-кеш | `a_detailed_colorful_ui_design_mockup_composite_fo.png` |
-| M-17 Настройки | Уведомления, разрешения, сохранность, приватность, информация | `a_detailed_colorful_ui_mockup_collage_in_russian.png`; `a_detailed_polished_ui_design_collage_in_the_same.png` |
-| M-18 Первый запуск | Вводное предупреждение, рекомендательный характер, политика, условия | `a_detailed_colorful_ui_mockup_collage_for_the_mob.png` |
-| M-19 Центр напоминаний | По колокольчику: задачи, выполнение, отложить, тест уведомлений | `a_wide_colorful_promotional_ui_illustration_a_la.png` |
-| M-20 Backup | Создание, восстановление, перенос, будущие автокопии | `a_wide_high_detail_colorful_ui_illustration_in_a.png` |
-| M-21 История исправлений | Редактирование записи, отмена/архивирование, ревизии, подтверждение | `a_colorful_detailed_multi_panel_app_ui_composite.png` |
-| M-22 Яйца хозяйства | Сбор/покупка/использование, остатки, привязка к инкубации и финансам | `a_highly_detailed_colorful_polished_app_ui_mocku.png` |
+| M-01 Главная | Три KPI, Инкубация, Поголовье, Корма, Финансы, Отчёты; колокольчик; 4 вкладки | [Nasedka_Главная_утверждённый_шаблон.png](assets/DES-002.png) |
+| M-02 Инкубация | Активные/завершённые, карточка, график, задачи, дневник | [Nasedka_Инкубация_эталон.png](assets/DES-003.png) |
+| M-03 Выбор инкубатора | Тип/конкретная модель, затем вместимость, автоматический переворот и документированные опции | [a_detailed_colorful_ui_illustration_for_a_rural_p.png](assets/DES-012.png) |
+| M-04 Подготовка инкубатора | Постраничная инструкция по выбранной модели с ссылкой на официальный источник, отметками действий | [a_wide_colorful_promotional_ui_mockup_scene_a_bri.png](assets/DES-032.png); [a_bright_highly_detailed_colorful_ui_illustratio.png](assets/DES-008.png) — дополнительные варианты |
+| M-05 Инкубационный дневник | Фактические измерения, овоскопирование, контроль воды, этапы и заметки | [a_wide_detailed_promotional_ui_mockup_image_in_ru.png](assets/DES-033.png) |
+| M-06 Итог инкубации | Не путать заложено/убрано/вылупилось/неопределённо; завершение партии | [a_bright_colorful_promotional_app_interface_scene.png](assets/DES-004.png); [наседка_учёт_яиц_в_инкубации.png](assets/DES-041.png) |
+| M-07 Под наседкой | «Подготовить наседку» либо «Птица уже села», выбор исходов и даты | [a_detailed_colorful_ui_illustration_in_a_rustic_g.png](assets/DES-013.png); [наседка_инструкции_и_наблюдение.png](assets/DES-039.png) |
+| M-08 Уход за наседкой | Ежедневная проверка, наблюдения, календарь, фактический вывод | [a_bright_detailed_app_ui_concept_image_in_russian.png](assets/DES-005.png) |
+| M-09 Курица с цыплятами | Кормление, вода, условия, постепенное знакомство со стадом | [a_wide_colorful_promotional_style_app_interface_g.png](assets/DES-028.png) |
+| M-10 Молодняк | Перенос один раз, карточка группы, возрастные рекомендации и наблюдения | [Nasedka_UI_Молодняк_перенос_и_уход_макет.png](assets/DES-000.png); [a_wide_colorful_promotional_ui_mockup_in_russian.png](assets/DES-031.png) |
+| M-11 Поголовье | Группы, численность, приход, выбытие, перевод и история | [Nasedka_UI_Поголовье_макет_для_согласования.png](assets/DES-001.png) |
+| M-12 Корма и запасы | Список, карточка корма, покупка и расход с одной связанной финоперацией | [a_wide_high_detail_graphic_ui_mockup_of_a_mobile.png](assets/DES-036.png) |
+| M-13 Финансы | Доходы, расходы, новая операция, краткие итоги и наглядность | [a_richly_detailed_colorful_ui_mockup_composite_sh.png](assets/DES-025.png) |
+| M-14 Отчёты | Поголовье, яйценоскость, вывод, доходы/расходы, формулы, период | [a_highly_detailed_colorful_polished_ui_mockup_co.png](assets/DES-022.png) |
+| M-15 Журнал | Единая лента, поиск/фильтры, подробности/исправления, переключение календаря | [a_detailed_ui_design_poster_concept_art_for_a_mobi.png](assets/DES-019.png) |
+| M-16 Новости | Статьи, советы, новости/обновления разработчика, источники, офлайн-кеш | [a_detailed_colorful_ui_design_mockup_composite_fo.png](assets/DES-011.png) |
+| M-17 Настройки | Уведомления, разрешения, сохранность, приватность, информация | [a_detailed_colorful_ui_mockup_collage_in_russian.png](assets/DES-015.png); [a_detailed_polished_ui_design_collage_in_the_same.png](assets/DES-018.png) |
+| M-18 Первый запуск | Вводное предупреждение, рекомендательный характер, политика, условия | [a_detailed_colorful_ui_mockup_collage_for_the_mob.png](assets/DES-014.png) |
+| M-19 Центр напоминаний | По колокольчику: задачи, выполнение, отложить, тест уведомлений | [a_wide_colorful_promotional_ui_illustration_a_la.png](assets/DES-030.png) |
+| M-20 Backup | Создание, восстановление, перенос, будущие автокопии | [a_wide_high_detail_colorful_ui_illustration_in_a.png](assets/DES-035.png) |
+| M-21 История исправлений | Редактирование записи, отмена/архивирование, ревизии, подтверждение | [a_colorful_detailed_multi_panel_app_ui_composite.png](assets/DES-009.png) |
+| M-22 Яйца хозяйства | Сбор/покупка/использование, остатки, привязка к инкубации и финансам | [a_highly_detailed_colorful_polished_app_ui_mocku.png](assets/DES-021.png) |
 
 ## Отдельное предложение, не финально утверждённое (PRESENTED)
 
 | ID | Тема | Исходник |
 |---|---|---|
-| M-23 | Пустые состояния, валидация, длинные списки, черновики и поворот | `a_wide_highly_detailed_ui_showcase_image_for_the.png` |
+| M-23 | Пустые состояния, валидация, длинные списки, черновики и поворот | [a_wide_highly_detailed_ui_showcase_image_for_the.png](assets/DES-038.png) |
 
 Логика сохранности и валидации согласована как требование, но картинка M-23 не получила самостоятельного подтверждения как точный окончательный вид.
 
 ## Исторические и заменённые варианты
 
-- `a_detailed_polished_ui_concept_composite_poster_i.png` — прежний журнал с повторяющимися списками, **не возвращать**.
-- `a_highly_detailed_colorful_ui_concept_image_in_ru.png` — предыдущий вариант журнала, заменён.
-- `a_wide_colorful_promotional_ui_composite_image_m.png` — расширенный черновой сбор/учёт яиц, заменён более точными формами.
-- `наседка_интерфейс_фермерского_приложения.png` — ранняя альтернатива общего оформления, **не менять утверждённый стиль по ней**.
+- [a_detailed_polished_ui_concept_composite_poster_i.png](assets/DES-017.png) — прежний журнал с повторяющимися списками, **не возвращать**.
+- [a_highly_detailed_colorful_ui_concept_image_in_ru.png](assets/DES-023.png) — предыдущий вариант журнала, заменён.
+- [a_wide_colorful_promotional_ui_composite_image_m.png](assets/DES-029.png) — расширенный черновой сбор/учёт яиц, заменён более точными формами.
+- [наседка_интерфейс_фермерского_приложения.png](assets/DES-040.png) — ранняя альтернатива общего оформления, **не менять утверждённый стиль по ней**.
 - Остальные `REFERENCE`-изображения внесены в полный архив с исходными именами и контрольными суммами, не считать их пропавшими.
 
 ## Общие правила для всех экранов

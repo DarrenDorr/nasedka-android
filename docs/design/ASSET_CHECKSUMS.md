@@ -1,6 +1,6 @@
 # Nasedka design archive — SHA-256 of original images
 
-These 43 checksums reference the UNMODIFIED PNG files in `Nasedka_Design_Vault_COMPLETE_2026-11-23.zip`. The authoritative ID-to-original-name/path mapping is inside `index/IMAGE_MANIFEST.csv` in that archive. This file is a catalog; it does **not** mean the PNG files have already been uploaded to GitHub.
+These 43 checksums reference the UNMODIFIED PNG files in `Nasedka_Design_Vault_COMPLETE_2026-11-23.zip`. The authoritative ID-to-original-name/path mapping is inside `index/IMAGE_MANIFEST.csv` in that archive. As of 2026-11-25 all 43 original PNGs are included in `assets/`. The independent workflow result must be checked on the import commit.
 
 ```
 DES-000 53ce802f4ff8cfd22ccc8bc96282864634e84655fcecec3400f91124c5aee4fd
