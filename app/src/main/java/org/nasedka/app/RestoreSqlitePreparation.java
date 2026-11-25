@@ -17,13 +17,19 @@ import java.nio.file.attribute.BasicFileAttributes;
 final class RestoreSqlitePreparation {
     private RestoreSqlitePreparation() {}
 
+    // Do not allow Android's default corruption handler to delete a source DB.
+    static final android.database.DatabaseErrorHandler PRESERVE_CORRUPTION =
+            db -> { throw new SQLiteException("Database corruption; preserve files"); };
+
     static void prepareClosed(Path path) throws IOException {
         Path file=path.toAbsolutePath().normalize();
         if(!Files.readAttributes(file,BasicFileAttributes.class,LinkOption.NOFOLLOW_LINKS).isRegularFile())
             throw new IOException("Not an existing SQLite file");
+        // Check every existing sidecar before SQLite can open or modify it.
+        for(String suffix:new String[]{"-wal","-shm","-journal"})regularIfPresent(side(file,suffix));
         // No CREATE_IF_NECESSARY: a missing database is an error, not a new one.
         try(SQLiteDatabase db=SQLiteDatabase.openDatabase(file.toString(),null,
-                SQLiteDatabase.OPEN_READWRITE|SQLiteDatabase.NO_LOCALIZED_COLLATORS)) {
+                SQLiteDatabase.OPEN_READWRITE|SQLiteDatabase.NO_LOCALIZED_COLLATORS,PRESERVE_CORRUPTION)) {
             try(Cursor c=db.rawQuery("PRAGMA wal_checkpoint(TRUNCATE)",null)){
                 if(!c.moveToFirst()||c.getInt(0)!=0||c.getInt(1)!=c.getInt(2))
                     throw new IOException("SQLite checkpoint incomplete");

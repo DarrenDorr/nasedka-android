@@ -76,16 +76,17 @@ final class RestoreLegacyRecovery {
         return true;
     }
 
-    private static void validatePair(Path inc,Path farm)throws IOException {
+    static void validatePair(Path inc,Path farm)throws IOException {
+        regular(inc);regular(farm);noSidecars(inc);noSidecars(farm);
         int flags=SQLiteDatabase.OPEN_READONLY|SQLiteDatabase.NO_LOCALIZED_COLLATORS;
-        try(SQLiteDatabase i=SQLiteDatabase.openDatabase(inc.toString(),null,flags);
-            SQLiteDatabase f=SQLiteDatabase.openDatabase(farm.toString(),null,flags)){
+        try(SQLiteDatabase i=SQLiteDatabase.openDatabase(inc.toString(),null,flags,RestoreSqlitePreparation.PRESERVE_CORRUPTION);
+            SQLiteDatabase f=SQLiteDatabase.openDatabase(farm.toString(),null,flags,RestoreSqlitePreparation.PRESERVE_CORRUPTION)){
             validateDatabase(i,BackupStore.INCUBATION);
             validateDatabase(f,BackupStore.FARM);
             BackupStore.relations(i,f);
         }catch(RuntimeException invalid){throw new IOException("Legacy database pair failed validation",invalid);}
     }
-    private static void validateDatabase(SQLiteDatabase db,String[] tables)throws IOException {
+    static void validateDatabase(SQLiteDatabase db,String[] tables)throws IOException {
         if(db.getVersion()!=2)throw new IOException("Unsupported legacy schema");
         try(Cursor c=db.rawQuery("PRAGMA integrity_check",null)){
             if(!c.moveToFirst()||!"ok".equalsIgnoreCase(c.getString(0))||c.moveToNext())

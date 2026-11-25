@@ -144,6 +144,13 @@ jobs:
           assert {c.get("name") for c in storage_cases} == storage_expected, "Missing/unexpected storage tests"
           assert all(not any(c.find(t) is not None for t in ("failure","error","skipped")) for c in storage_cases)
           print(f"R1: {len(storage_cases)} executed Android file storage tests; required methods present.")
+          startup_cases = [c for p in files for c in ET.parse(p).getroot().iter("testcase")
+                           if c.get("classname","") == "org.nasedka.app.RestoreStartupFilesTest"]
+          startup_expected = set(["freshStartupCreatesActualSchemasAndStableGeneration","historicalPartialPairPreservesExistingRows","establishedMissingDatabaseIsNotRecreated","orphanSidecarOrInitializationStageBlocksCreation","malformedJournalAndLegacyConflictPreserveEvidence","v2PendingRecoveredBeforeOpeningActualPair","corruptDatabaseIsPreservedAndPartnerNotCreated","legacyRemnantsWithoutMarkerRemainBlockedAndUntouched"])
+          assert len(startup_cases) == len(startup_expected)
+          assert {c.get("name") for c in startup_cases} == startup_expected
+          assert all(not any(c.find(t) is not None for t in ("failure","error","skipped")) for c in startup_cases)
+          print(f"R1: {len(startup_cases)} executed Android startup file tests; required methods present.")
           PY
       - name: Verify process death evidence (six independent recoveries)
         if: always()
