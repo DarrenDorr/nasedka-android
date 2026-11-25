@@ -5,6 +5,7 @@ on:
       - 'app/src/main/java/org/nasedka/app/BackupStore.java'
       - 'app/src/main/java/org/nasedka/app/Db.java'
       - 'app/src/main/java/org/nasedka/app/FarmDb.java'
+      - 'app/src/main/java/org/nasedka/app/Restore*.java'
       - 'app/src/androidTest/**'
       - 'app/build.gradle'
       - '.github/workflows/r1-android-sqlite.yml'
@@ -118,6 +119,13 @@ jobs:
           assert expected <= names, f"Missing executed tests: {expected - names}"
           assert all(not any(c.find(t) is not None for t in ("failure","error","skipped")) for c in cases), "Failure or skipped test"
           print(f"R1: {len(cases)} executed Android SQLite tests; required methods present.")
+          storage_cases = [c for p in files for c in ET.parse(p).getroot().iter("testcase")
+                           if c.get("classname","").endswith(".RestoreFileStorageTest")]
+          storage_expected = set(["restoreTwoSqliteFilesAndSettings","recoverAfterOneFileReplacement","failedSettingsWriteAfterBothDatabasesRecovers","corruptRollbackSourceKeepsJournalAndOtherCopies","legacyMarkerAndSidecarsBlockBeforeMutation"])
+          assert len(storage_cases) == len(storage_expected), "Wrong storage test count"
+          assert {c.get("name") for c in storage_cases} == storage_expected, "Missing/unexpected storage tests"
+          assert all(not any(c.find(t) is not None for t in ("failure","error","skipped")) for c in storage_cases)
+          print(f"R1: {len(storage_cases)} executed Android file storage tests; required methods present.")
           PY
       - name: Preserve small test evidence
         if: always()

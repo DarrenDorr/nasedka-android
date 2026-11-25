@@ -38,7 +38,9 @@
 
 **R1.1b-1/-2a — PASS JVM scope:** [CI 45537467265](https://github.com/DarrenDorr/nasedka-android/actions/runs/45537467265) SUCCESS; скачан архив 14986844104, SHA-256 совпал, оба XML разобраны: 9+8=17, 0 failures/errors/skipped. [Постоянное evidence](../security/evidence/R1_1B_JVM_2026-11-25.json). Не Android durability evidence.
 
-**СЛЕДУЮЩИЙ конкретный шаг:** R1.1b-2b — adapter двух SQLite и prefs, immutable rollback/staging copies, legacy marker и Android file tests. R1.1b-2/-3 не выпускать раздельно. Дизайн не менять. Полный SAF, конкурентность, crash recovery и реальное обновление остаются в последующих испытаниях R1. 
+**R1.1b-2b — изолированный файловый adapter:** реализованы RestoreFileStorage/RestoreSettingsPort, реальные SQLite-файлы и отдельные prefs в 5 Android-тестах. [Отчёт](R1_1B_FILE_STORAGE_2026-11-25.md). Новый код не подключён к BackupStore; legacy marker блокирует новый протокол, отдельный recovery ещё открыт. Android CI NOT_RUN.
+
+**СЛЕДУЮЩИЙ конкретный шаг:** проверить build + Android XML (10 старых + 5 новых), устранить несовместимость NIO/SQLite если есть; затем расширить fault injection, legacy recovery и coordinator. R1.1b-2/-3 не выпускать раздельно. Дизайн не менять. Полный SAF, конкурентность, crash recovery и реальное обновление остаются в последующих испытаниях R1. 
 
 **ПЛАН РЕАЛИЗАЦИИ (только по отдельному согласию на изменение приложения):** R1 — тесты резервных копий, миграций, фоновых уведомлений и сохранения черновиков; R2 — перенос точного визуального каркаса (4 кнопки и Главная); R3 — связанный учёт яиц, единый журнал и история исправлений. Не возвращаться к созданию нового дизайна без запроса.
 
