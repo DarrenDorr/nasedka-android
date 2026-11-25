@@ -36,7 +36,9 @@
 
 **R1.1b-2a — внутренний файловый журнал:** реализован изолированный RestoreJournal и 8 JVM-тестов на временных файлах, [отчёт](R1_1B_FILE_JOURNAL_2026-11-25.md). Не подключён к BackupStore, Android runtime durability NOT_RUN.
 
-**СЛЕДУЮЩИЙ конкретный шаг:** проверить новый CI и XML 17/17, сохранить evidence. Затем R1.1b-2b: adapter двух SQLite и prefs, immutable rollback/staging copies, legacy marker и Android file tests. R1.1b-2/-3 не выпускать раздельно. Дизайн не менять. Полный SAF, конкурентность, crash recovery и реальное обновление остаются в последующих испытаниях R1. 
+**R1.1b-1/-2a — PASS JVM scope:** [CI 45537467265](https://github.com/DarrenDorr/nasedka-android/actions/runs/45537467265) SUCCESS; скачан архив 14986844104, SHA-256 совпал, оба XML разобраны: 9+8=17, 0 failures/errors/skipped. [Постоянное evidence](../security/evidence/R1_1B_JVM_2026-11-25.json). Не Android durability evidence.
+
+**СЛЕДУЮЩИЙ конкретный шаг:** R1.1b-2b — adapter двух SQLite и prefs, immutable rollback/staging copies, legacy marker и Android file tests. R1.1b-2/-3 не выпускать раздельно. Дизайн не менять. Полный SAF, конкурентность, crash recovery и реальное обновление остаются в последующих испытаниях R1. 
 
 **ПЛАН РЕАЛИЗАЦИИ (только по отдельному согласию на изменение приложения):** R1 — тесты резервных копий, миграций, фоновых уведомлений и сохранения черновиков; R2 — перенос точного визуального каркаса (4 кнопки и Главная); R3 — связанный учёт яиц, единый журнал и история исправлений. Не возвращаться к созданию нового дизайна без запроса.
 

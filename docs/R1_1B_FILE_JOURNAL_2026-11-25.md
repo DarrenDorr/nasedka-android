@@ -10,3 +10,7 @@
 - CI проверяет 17 точных имён методов в Gradle JUnit XML, 0 failures/errors/skipped, сохраняет небольшой артефакт 3 дня. Новая проверка NOT_RUN на момент записи.
 
 Следующий шаг: CI + XML evidence; затем R1.1b-2b: canonical prefs encoding, durable old/staged copies, проверка хешей, Storage adapter, старый marker, Android file tests и fault injection. R1.1b-3: общий barrier, generation guard. Не подключать/merge частичное решение до проверки -2/-3. UI, design assets, SQLite v2 и backup JSON v1 не меняются. Java NIO — технический выбор, применимость на Android требует проверки.
+
+## Подтверждённые испытания
+
+Commit `5cbf60746cc4eb7276c264fb66c3ee3b00fed210`, [run 45537467265](https://github.com/DarrenDorr/nasedka-android/actions/runs/45537467265), job 138947490270: build + exact XML gate SUCCESS. Независимо распакован artifact 14986844104, SHA-256 ZIP совпал с GitHub digest; 9 protocol + 8 journal = 17/17, 0 failures/errors/skipped. Нормализованные результаты и hashes обоих XML: [evidence](../security/evidence/R1_1B_JVM_2026-11-25.json). PASS только JVM scope. Android adapter, real process death, power loss и barrier остаются OPEN.

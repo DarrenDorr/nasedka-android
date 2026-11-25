@@ -33,3 +33,7 @@
 ## Проверка c40b09e
 
 [CI 45534712465](https://github.com/DarrenDorr/nasedka-android/actions/runs/45534712465), job 138938361639 SUCCESS. Лог подтверждает `:app:testGithubDebugUnitTest` без UP-TO-DATE/FROM-CACHE и BUILD SUCCESSFUL; три APK и test APK собраны. XML не публиковался, независимый счёт 9/9 не установлен. Групповой CI PASS позволяет продолжить изолированную -2a. Новый gate требует все 9 + 8 методов, 0 failures/errors/skipped. Не закрывать evidence до отчёта.
+
+## Подтверждённые испытания
+
+Commit `5cbf60746cc4eb7276c264fb66c3ee3b00fed210`, [run 45537467265](https://github.com/DarrenDorr/nasedka-android/actions/runs/45537467265), job 138947490270: build + exact XML gate SUCCESS. Независимо распакован artifact 14986844104, SHA-256 ZIP совпал с GitHub digest; 9 protocol + 8 journal = 17/17, 0 failures/errors/skipped. Нормализованные результаты и hashes обоих XML: [evidence](../security/evidence/R1_1B_JVM_2026-11-25.json). PASS только JVM scope. Android adapter, real process death, power loss и barrier остаются OPEN.
