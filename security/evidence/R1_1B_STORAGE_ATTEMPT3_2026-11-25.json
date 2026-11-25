@@ -1,0 +1,255 @@
+{
+  "stage": "R1.1b-2b attempt 3",
+  "tested_commit": "a6cc7b9e8a4cdd770babad7340b63b61f248254f",
+  "build": {
+    "run": 45540890875,
+    "job": 138958841868,
+    "result": "PASS",
+    "artifact": 14989102404,
+    "archive_bytes": 1324,
+    "archive_sha256": "b44de49442f4b4682846c754f80b42928d1c21c7e042c02c8c733e96d861a172",
+    "xml_sha256": {
+      "RestoreJournalTest": "6e690b6f29f4b6943bcddde15d43378c2f3563cb6bc9cf2f60aa05ecf8e41e62",
+      "RestoreProtocolTest": "49531b0e8ea54f34acd42865bb0a02970e1121303d68783390a46f4db9f7886b"
+    },
+    "counts": {
+      "RestoreJournalTest": 8,
+      "RestoreProtocolTest": 9
+    }
+  },
+  "android": {
+    "run": 45540890833,
+    "job": 138958842169,
+    "result": "PASS",
+    "api": 35,
+    "artifact": 14988144834,
+    "archive_bytes": 5424,
+    "archive_sha256": "27d6764fd7f42eb6614c38cbed41e8af88062f2a2844b94b43d988b0821e7d24",
+    "xml_sha256": "9fc84c176cd45101dbc5354f6524a47b374655462d8d5a48de293a4fc1fe75b5",
+    "counts": {
+      "BackupReliabilityTest": 10,
+      "RestoreFileStorageTest": 16
+    }
+  },
+  "suites": [
+    {
+      "name": "RestoreProtocolTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "methods": [
+        {
+          "method": "pendingRestoreRejectsAnotherRestoreWithoutWriting",
+          "result": "PASS"
+        },
+        {
+          "method": "settingsCommitFailureDoesNotCommitDatabases",
+          "result": "PASS"
+        },
+        {
+          "method": "corruptCommittedGenerationDoesNotCleanupOrRollback",
+          "result": "PASS"
+        },
+        {
+          "method": "successfulRestoreCommitsAllThreeAndClearsJournal",
+          "result": "PASS"
+        },
+        {
+          "method": "repeatedInterruptionDuringRollbackIsRecoverable",
+          "result": "PASS"
+        },
+        {
+          "method": "beforeAndAfterEveryRestoreBoundaryRecoversCorrectGeneration",
+          "result": "PASS"
+        },
+        {
+          "method": "committedCleanupFailureNeverRollsBack",
+          "result": "PASS"
+        },
+        {
+          "method": "missingRollbackCopiesRemainPending",
+          "result": "PASS"
+        },
+        {
+          "method": "corruptJournalFailsClosed",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "name": "RestoreJournalTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "methods": [
+        {
+          "method": "missingDirectoryIsNotAnEmptyJournal",
+          "result": "PASS"
+        },
+        {
+          "method": "commitSurvivesReopenAndClearsOnlyTerminal",
+          "result": "PASS"
+        },
+        {
+          "method": "oversizedOrNonRegularJournalFailsClosed",
+          "result": "PASS"
+        },
+        {
+          "method": "wrongGenerationOrHashesCannotPublishOrClear",
+          "result": "PASS"
+        },
+        {
+          "method": "damagedJournalIsNotTreatedAsMissing",
+          "result": "PASS"
+        },
+        {
+          "method": "rollbackTerminalSurvivesReopen",
+          "result": "PASS"
+        },
+        {
+          "method": "orphanTemporaryDoesNotOverrideAuthoritativeJournal",
+          "result": "PASS"
+        },
+        {
+          "method": "invalidTransitionsDoNotChangeJournal",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "name": "BackupReliabilityTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "methods": [
+        {
+          "method": "legacyOnlyHatchedAtDefaultIsNormalized",
+          "result": "PASS"
+        },
+        {
+          "method": "v2MissingAnyTableIsRejected",
+          "result": "PASS"
+        },
+        {
+          "method": "v1OnlyAbsentNotesAllowed",
+          "result": "PASS"
+        },
+        {
+          "method": "farmV1BackupMigratesWithoutNotes",
+          "result": "PASS"
+        },
+        {
+          "method": "incV1ReconstructedMigrationPreservesRows",
+          "result": "PASS"
+        },
+        {
+          "method": "missingNullAndNonIntegerRowFieldsRejectedWithoutPartialInsert",
+          "result": "PASS"
+        },
+        {
+          "method": "coercedVersionsAndSettingsRejected",
+          "result": "PASS"
+        },
+        {
+          "method": "brokenTransferReferencesAndQuantityRejected",
+          "result": "PASS"
+        },
+        {
+          "method": "farmV1MigrationPreservesRowsAndIds",
+          "result": "PASS"
+        },
+        {
+          "method": "currentRoundTripAllFourteenTables",
+          "result": "PASS"
+        }
+      ]
+    },
+    {
+      "name": "RestoreFileStorageTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "methods": [
+        {
+          "method": "recoverAfterOneFileReplacement",
+          "result": "PASS"
+        },
+        {
+          "method": "preparedWalPreservesCommittedRows",
+          "result": "PASS"
+        },
+        {
+          "method": "missingSqliteIsNotCreatedByPreparation",
+          "result": "PASS"
+        },
+        {
+          "method": "restoreTwoSqliteFilesAndSettings",
+          "result": "PASS"
+        },
+        {
+          "method": "legacyAmbiguousOrMalformedMarkerPreservesFiles",
+          "result": "PASS"
+        },
+        {
+          "method": "repeatedRecoveryAfterPartialRollback",
+          "result": "PASS"
+        },
+        {
+          "method": "settingsFailureAfterWriteStillRollsBack",
+          "result": "PASS"
+        },
+        {
+          "method": "failedSettingsWriteAfterBothDatabasesRecovers",
+          "result": "PASS"
+        },
+        {
+          "method": "legacyRecoveryValidatesRealVersionTwoSchemas",
+          "result": "PASS"
+        },
+        {
+          "method": "insufficientSpaceRejectsBeforeJournalOrLiveChanges",
+          "result": "PASS"
+        },
+        {
+          "method": "legacyRecoveryRepeatsAfterFirstCopy",
+          "result": "PASS"
+        },
+        {
+          "method": "legacyConflictingJournalOrFailedValidationBlocksReplacement",
+          "result": "PASS"
+        },
+        {
+          "method": "committedRecoveryAfterPartialCleanupRetainsNewData",
+          "result": "PASS"
+        },
+        {
+          "method": "legacyRecoveryAcrossAllFiveRenamePrefixes",
+          "result": "PASS"
+        },
+        {
+          "method": "corruptRollbackSourceKeepsJournalAndOtherCopies",
+          "result": "PASS"
+        },
+        {
+          "method": "legacyMarkerAndSidecarsBlockBeforeMutation",
+          "result": "PASS"
+        }
+      ]
+    }
+  ],
+  "tests": 43,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "gate": "PASS_TESTED_SCOPE; R1.1b-2b HOLD",
+  "remaining": [
+    "actual process death with independent restart",
+    "real I/O failures and ENOSPC",
+    "final review of isolated adapter; no production wiring"
+  ],
+  "verification": "Downloaded both ZIP artifacts, computed SHA-256 matching GitHub digest, parsed all 3 XML reports and compared all 43 method names to source at tested commit."
+}
