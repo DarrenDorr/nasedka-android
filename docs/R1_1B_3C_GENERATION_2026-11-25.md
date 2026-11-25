@@ -22,3 +22,6 @@ Commit `5f50a5b1f36bb1fc41f987eccb6b7c99ad58823f`. Build 45559829351/job 1390206
 
 ## Попытка 2 — исправление теста, NOT_RUN
 В generationCommitAndRollbackPreserveCorrectUuid после rollback проверяются NONE и отсутствие обоих incoming файлов, заново создаются две synthetic SQLite fixtures для второй независимой операции, сохраняются все старые assertions; после успешного commit дополнительно проверяются NONE и удаление inputs. Production codec/storage/coordinator, security requirements и gates не изменены. 75 checks должны быть подтверждены повторно. Не переходить к -3c-2 до PASS; no merge or production wiring.
+
+## Итоговый контроль -3c-1 — PASS
+Commit `095a362044daebead10c7248cdb9717de9da3e6a`, build 45563186712/job 139031559798 and Android 45563186688/job 139031559758 SUCCESS. 30 JVM + 37 Android + 6 independent process death/restart + 2 ENOSPC = 75/75. All 5 new methods PASS, fixed test included. Three downloaded ZIP digests, four XML and JSON/log/witness checked. [Evidence](../security/evidence/R1_1B_3C1_FINAL_2026-11-25.json). PASS_R1_1B_3C1_ISOLATED_SCOPE. User authorized next. -3c-2a startup ordering/quarantine now developed; [report](R1_1B_3C2_STARTUP_2026-11-25.md). No production startup or physical disk claim.

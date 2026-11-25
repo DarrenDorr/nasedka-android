@@ -473,4 +473,62 @@ public class RestoreFileStorageTest {
         try(DataAccessCoordinator.Lease lease=coordinator.tryShort()){assertEquals(GEN_OLD,lease.capture().generation());}
         assertGeneration(false);
     }
+
+    @Test public void startupGenerationInitializationIsStableAndPreservesSettings()throws Exception {
+        assertNull(port.generation());byte[] previous=port.read();
+        UUID issued=port.initializeGeneration();assertNotNull(issued);
+        assertEquals(issued,new RestoreSettingsPort(prefs).initializeGeneration());
+        assertEquals(issued,port.generation());
+        assertEquals("08:00",prefs.getString("checks",null));
+        assertEquals(42L,prefs.getLong("next_alarm_at",0));
+        assertEquals("keep",prefs.getString("unrelated",null));
+        assertFalse(Arrays.equals(previous,port.read()));
+    }
+
+    // Simulate the Android contract where commit reports failure even though
+    // the in-memory map changed. Delegate edits to actual isolated prefs.
+    // This is NOT a physical I/O failure or proof of disk state.
+    private static SharedPreferences falseCommit(SharedPreferences backing){
+        return (SharedPreferences)java.lang.reflect.Proxy.newProxyInstance(
+                SharedPreferences.class.getClassLoader(),new Class<?>[]{SharedPreferences.class},
+                (proxy,method,args)->{
+                    if(!"edit".equals(method.getName()))return invokeDelegate(backing,method,args);
+                    SharedPreferences.Editor editor=backing.edit();
+                    return java.lang.reflect.Proxy.newProxyInstance(SharedPreferences.Editor.class.getClassLoader(),
+                            new Class<?>[]{SharedPreferences.Editor.class},(e,m,a)->{
+                                if("commit".equals(m.getName())){editor.apply();return false;}
+                                Object value=invokeDelegate(editor,m,a);
+                                return value==editor?e:value;
+                            });
+                });
+    }
+    private static Object invokeDelegate(Object target,java.lang.reflect.Method method,Object[] args)throws Throwable{
+        try{return method.invoke(target,args);}
+        catch(java.lang.reflect.InvocationTargetException e){throw e.getCause();}
+    }
+
+    @Test public void falseCommitQuarantinesCachedGenerationAcrossAdapterInstances()throws Exception {
+        SharedPreferences failing=falseCommit(prefs);
+        RestoreSettingsPort uncertain=new RestoreSettingsPort(failing);
+        rejected(uncertain::initializeGeneration);
+        assertNotNull(prefs.getString(RestoreSettingsPort.GENERATION,null));
+        rejected(uncertain::generation);rejected(uncertain::read);
+        RestoreSettingsPort reopened=new RestoreSettingsPort(failing);
+        rejected(reopened::initializeGeneration);rejected(()->reopened.write(oldSettings));
+        rejected(reopened::read);
+    }
+
+    @Test public void falseCommitDuringRestoreRetainsPendingAndBlocksSameProcessRecovery()throws Exception {
+        installGenerationFixtures();
+        SharedPreferences failing=falseCommit(prefs);
+        RestoreSettingsPort uncertain=new RestoreSettingsPort(failing);
+        RestoreFileStorage s=new RestoreFileStorage(root,uncertain,newSettings);
+        rejected(()->new RestoreProtocol(s).restore());
+        assertEquals(PENDING,s.readPhase());
+        assertEquals(GEN_NEW.toString(),prefs.getString(RestoreSettingsPort.GENERATION,null));
+        assertTrue(Files.exists(work.resolve("old-inc.db")));assertTrue(Files.exists(work.resolve("old-farm.db")));
+        rejected(()->new RestoreProtocol(new RestoreFileStorage(root,new RestoreSettingsPort(failing),null)).recover());
+        assertEquals(PENDING,s.readPhase());assertTrue(Files.exists(work.resolve("old-prefs.bin")));
+        // Intentionally no READY claim or same-process bypass through backing.
+    }
 }

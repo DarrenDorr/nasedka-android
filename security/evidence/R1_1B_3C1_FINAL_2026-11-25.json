@@ -1,0 +1,146 @@
+{
+  "stage": "R1.1b-3c-1",
+  "tested_commit": "095a362044daebead10c7248cdb9717de9da3e6a",
+  "gate": "PASS_R1_1B_3C1_ISOLATED_SCOPE",
+  "build": {
+    "run": 45563186712,
+    "job": 139031559798,
+    "result": "PASS",
+    "jvm": {
+      "artifact": 14998513227,
+      "archive_bytes": 2136,
+      "sha256": "29650768891e66d9e092546576fc798a22e563f9851814cddd5c74dfb1d5bc17",
+      "suites": {
+        "DataAccessCoordinatorTest": {
+          "count": 13,
+          "sha256": "0e6dd7ede8c05fb1f938504bff89e3a4a783ed885e211befe8cc9bcc9feffbe1"
+        },
+        "RestoreJournalTest": {
+          "count": 8,
+          "sha256": "2463852278d3b1170fe0fe37fdcf88ff68bbe988f7fc544d971e851f64616695"
+        },
+        "RestoreProtocolTest": {
+          "count": 9,
+          "sha256": "6873e099ce50070942279d6ed8435d0b7b16ab7c1cafc168a823e0446f49d452"
+        }
+      },
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "linux_enospc": {
+      "artifact": 14998388476,
+      "archive_bytes": 247,
+      "sha256": "6ece194b693ee92331746ee72abf2ba4239ee32f1d2f96dd0869fca8f1e5c08c",
+      "log_sha256": "e280cd70ca2f9f91edf2a8e5a41d29cdea7098f4a20ffb7656298ba5cc18e6ae",
+      "result": "PASS"
+    }
+  },
+  "android": {
+    "run": 45563186688,
+    "job": 139031559758,
+    "result": "PASS",
+    "api": 35,
+    "artifact": 14998638634,
+    "archive_bytes": 12419,
+    "sha256": "eda188388ed0e30d40a627c7d2c19ae57c6b001be795b19009b0e0aff0e3bdbd",
+    "xml_sha256": "a7accb7f6c7bd1fc91e6c59767c10869492f1b16b37b323772a213138fa78694",
+    "counts": {
+      "BackupReliabilityTest": 10,
+      "RestoreFileStorageTest": 27
+    },
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "new_methods": [
+      {
+        "method": "generationCommitAndRollbackPreserveCorrectUuid",
+        "result": "PASS"
+      },
+      {
+        "method": "legacySettingsEncodingRemainsByteIdenticalAndRemovesGeneration",
+        "result": "PASS"
+      },
+      {
+        "method": "malformedGenerationAndUnknownVersionRejectWithoutMutation",
+        "result": "PASS"
+      },
+      {
+        "method": "targetGenerationIgnoresImportedUuidAndSchedulerState",
+        "result": "PASS"
+      },
+      {
+        "method": "generationTokenChangesOnlyAfterVerifiedRestoreOutcome",
+        "result": "PASS"
+      }
+    ],
+    "process_json_sha256": "43058a4386afd48bc985e228751425e5dd6b70ad27ebafa15b7525cce4327e78",
+    "process_cases": [
+      {
+        "name": "prepared",
+        "phase": "NONE",
+        "killed_pid": 4147,
+        "recovery_pid": 4187,
+        "outcome": "NO_PENDING",
+        "result": "PASS"
+      },
+      {
+        "name": "first-db",
+        "phase": "PENDING",
+        "killed_pid": 4219,
+        "recovery_pid": 4253,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "settings",
+        "phase": "PENDING",
+        "killed_pid": 4287,
+        "recovery_pid": 4322,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "committed",
+        "phase": "COMMITTED",
+        "killed_pid": 4358,
+        "recovery_pid": 4396,
+        "outcome": "NEW_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "rollback",
+        "phase": "PENDING",
+        "killed_pid": 4430,
+        "recovery_pid": 4478,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "rolled-back-cleanup",
+        "phase": "ROLLED_BACK",
+        "killed_pid": 4509,
+        "recovery_pid": 4542,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      }
+    ],
+    "enospc": {
+      "result": "PASS",
+      "capacity_bytes": 8388608,
+      "pid": 4622,
+      "witness_sha256": "25cf512da7cc7ece71c093ae73ddc9195e03749390c3caa5aee918468953e610",
+      "mount_sha256": "873730229eaf5750b9295b903250ac636bb2d3d65b5d9f69761cf196d9c124cb",
+      "instrumentation_sha256": "1ef758afaf3864135935acf9ad7441f6e8499dbb1e94d2977cea37cb19e88733"
+    }
+  },
+  "ordinary_passed": 67,
+  "special_passed": 8,
+  "total_passed": 75,
+  "not_run": 0,
+  "verification": "Independently calculated SHA-256 of three downloaded ZIPs matching GitHub digests, parsed four XMLs including all 5 new methods, no failed/error/skipped testcase nodes, read process JSON and both ENOSPC logs/witness. Both CI exact gates SUCCESS.",
+  "limitations": [
+    "Isolated codec only; production startup/notification integration not wired",
+    "Physical power loss and real device not proved"
+  ]
+}

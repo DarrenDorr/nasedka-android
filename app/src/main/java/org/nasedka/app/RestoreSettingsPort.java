@@ -15,9 +15,28 @@ final class RestoreSettingsPort implements RestoreFileStorage.SettingsPort {
     private static final int MAGIC=0x4e535032;
     private static final int GENERATION_MAGIC=0x4e535033;
     static final String GENERATION="data_generation";
+    // Process-local quarantine. Strong identity references are retained only
+    // for ambiguous writes; no same-process retry by recreating the adapter.
+    // Production must use the one application-scoped preferences instance
+    // under the coordinator; different instances/processes are not covered.
+    private static final java.util.Set<SharedPreferences> UNCERTAIN=
+            java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
     private final SharedPreferences prefs;
+    private void requireCertain()throws IOException {
+        synchronized(UNCERTAIN){
+            if(UNCERTAIN.contains(prefs))throw new IOException("Settings outcome uncertain; restart required");
+        }
+    }
+    private void markUncertain()throws IOException {
+        synchronized(UNCERTAIN){
+            if(!UNCERTAIN.add(prefs))throw new IOException("Settings outcome uncertain; restart required");
+        }
+    }
+    private void confirmWrite(){
+        synchronized(UNCERTAIN){UNCERTAIN.remove(prefs);}
+    }
     RestoreSettingsPort(SharedPreferences prefs){this.prefs=java.util.Objects.requireNonNull(prefs);}
-    @Override public byte[] read() throws IOException {return encode(prefs.getAll());}
+    @Override public byte[] read() throws IOException {requireCertain();return encode(prefs.getAll());}
 
     static UUID generation(Map<String,?> values)throws IOException {
         if(!values.containsKey(GENERATION))return null;
@@ -29,7 +48,20 @@ final class RestoreSettingsPort implements RestoreFileStorage.SettingsPort {
             return uuid;
         }catch(IllegalArgumentException e){throw new IOException("Invalid data generation",e);}
     }
-    UUID generation()throws IOException{return generation(prefs.getAll());}
+    UUID generation()throws IOException{requireCertain();return generation(prefs.getAll());}
+
+    /** Called only after startup has resolved journals and verified the pair. */
+    UUID initializeGeneration()throws IOException {
+        requireCertain();
+        Map<String,Object> values=new HashMap<>(prefs.getAll());
+        encode(values); // validate all existing managed values before editing
+        UUID existing=generation(values);
+        if(existing!=null)return existing;
+        UUID issued=UUID.randomUUID();
+        values.put(GENERATION,issued.toString());
+        write(encode(values));
+        return issued;
+    }
 
     /** Caller must first validate the public backup; never import its generation. */
     static byte[] target(Map<String,?> validatedPublicSettings, UUID previous)throws IOException {
@@ -72,6 +104,7 @@ final class RestoreSettingsPort implements RestoreFileStorage.SettingsPort {
         return bytes.toByteArray();
     }
     @Override public void write(byte[] bytes) throws IOException {
+        requireCertain();
         if(bytes==null||bytes.length>16384)throw new IOException("Invalid settings snapshot");
         java.util.Map<String,Object> values=new java.util.HashMap<>();
         try(DataInputStream in=new DataInputStream(new ByteArrayInputStream(bytes))){
@@ -97,7 +130,12 @@ final class RestoreSettingsPort implements RestoreFileStorage.SettingsPort {
         }
         if(values.containsKey(GENERATION))edit.putString(GENERATION,(String)values.get(GENERATION));
         else edit.remove(GENERATION); // historical snapshot has explicitly absent generation
+        // commit(false) may already have changed the in-memory map. Never
+        // treat that map, or a later no-op commit, as a verified disk outcome.
+        // Any exception/false/mismatch leaves the quarantine set until restart.
+        markUncertain();
         if(!edit.commit())throw new IOException("Settings commit failed");
-        if(!Arrays.equals(bytes,read()))throw new IOException("Settings verification failed");
+        if(!Arrays.equals(bytes,encode(prefs.getAll())))throw new IOException("Settings verification failed");
+        confirmWrite();
     }
 }
