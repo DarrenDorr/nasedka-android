@@ -54,7 +54,11 @@
 
 **Попытка 2:** явная установка обоих APK после connectedAndroidTest, проверка регистрации runner и target, PID через успешный ps, раздельные обязательные gates ordinary XML / process JSON. Production и тестируемая логика не менялись. NOT_RUN.
 
-**СЛЕДУЮЩИЙ конкретный шаг:** подтвердить все 53 проверки новой редакции, исправить любые FAIL; Android-specific ENOSPC и финальный аудит открыты. R1.1b-2b HOLD, -3 не начинать, production wiring не выполнен. Дизайн не менять. Полный SAF, конкурентность, crash recovery и реальное обновление остаются в последующих испытаниях R1. 
+**R1.1b-2b аварийные испытания, попытка 2 — PASS в проверенном объёме:** [build 45546747538](https://github.com/DarrenDorr/nasedka-android/actions/runs/45546747538) и [Android 45546747497](https://github.com/DarrenDorr/nasedka-android/actions/runs/45546747497) SUCCESS. 46 ordinary methods + 6 actual kill/restart + 1 Linux ENOSPC = 53/53. Три ZIP, XML, JSON PID/outcomes и Linux log проверены. [Evidence](../security/evidence/R1_1B_CRASH_IO_ATTEMPT2_2026-11-25.json).
+
+**Android ENOSPC — новая проверка:** отдельный CI-only tmpfs 8 MiB внутри disposable emulator, root только для provisioning, SELinux Enforcing, st_dev/capacity guards, настоящая ошибка записи Android и rollback после освобождения места. Инфраструктура ещё NOT_RUN; если root/mount/SELinux/namespace блокирует, сохранить точную причину, не ослаблять защиту и не заполнять /data.
+
+**СЛЕДУЮЩИЙ конкретный шаг:** проверить 46 ordinary + 6 actual kill/restart + Linux ENOSPC + Android ENOSPC (54 проверки), затем финальный аудит -2b. HOLD, -3 не начинать, production wiring не выполнен. Дизайн не менять. Полный SAF, конкурентность, crash recovery и реальное обновление остаются в последующих испытаниях R1. 
 
 **ПЛАН РЕАЛИЗАЦИИ (только по отдельному согласию на изменение приложения):** R1 — тесты резервных копий, миграций, фоновых уведомлений и сохранения черновиков; R2 — перенос точного визуального каркаса (4 кнопки и Главная); R3 — связанный учёт яиц, единый журнал и история исправлений. Не возвращаться к созданию нового дизайна без запроса.
 

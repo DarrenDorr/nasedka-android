@@ -113,4 +113,80 @@ public class RestoreProcessDeathTest {
         assertEquals("keep",prefs(name).getString("unrelated",null));
         witness(root.resolve("verified.txt"),name+" "+Process.myPid()+" "+outcome.name());
     }
+
+    private static boolean actualNoSpace(IOException e){
+        for(Throwable t=e;t!=null;t=t.getCause()){
+            if(t instanceof android.system.ErrnoException &&
+                    ((android.system.ErrnoException)t).errno==android.system.OsConstants.ENOSPC)return true;
+            String message=String.valueOf(t.getMessage()).toLowerCase(Locale.ROOT);
+            if(message.contains("enospc")||message.contains("no space left on device"))return true;
+        }
+        return false;
+    }
+
+    @Test public void boundedAndroidEnospc()throws Exception{
+        assertEquals("1",InstrumentationRegistry.getArguments().getString("r1_enospc"));
+        assertTrue("Disposable emulator only",android.os.Build.FINGERPRINT.contains("generic")
+                ||android.os.Build.HARDWARE.contains("ranchu"));
+        Path root=context().getFilesDir().toPath().resolve("r1-bounded-enospc");
+        // Refuse any unbounded/shared filesystem before writing fixtures.
+        RestoreFileStorage.directory(root);
+        assertNotEquals("Separate device required",android.system.Os.stat(root.getParent().toString()).st_dev,
+                android.system.Os.stat(root.toString()).st_dev);
+        android.os.StatFs fs=new android.os.StatFs(root.toString());
+        long capacity=fs.getTotalBytes();
+        assertTrue("Expected 8 MiB disposable mount",capacity>=4L*1024*1024&&capacity<=16L*1024*1024);
+        try(java.util.stream.Stream<Path> files=Files.list(root)){
+            assertEquals("Mount must be empty",0L,files.count());
+        }
+        Path work=Files.createDirectory(root.resolve(RestoreFileStorage.WORK));
+        Path inc=root.resolve("incuba.db"),farm=root.resolve("nasedka_farm.db");
+        Path fill=root.resolve("bounded-fill.bin");
+        SharedPreferences prefs=context().getSharedPreferences("r1_bounded_enospc",Context.MODE_PRIVATE);
+        assertTrue(prefs.edit().clear().putString("unrelated","keep").commit());
+        RestoreSettingsPort port=new RestoreSettingsPort(prefs);
+        port.write(settings(false));
+        db(inc,"old-inc");db(farm,"old-farm");
+        db(work.resolve(RestoreFileStorage.INCOMING_INC),"new-inc");
+        db(work.resolve(RestoreFileStorage.INCOMING_FARM),"new-farm");
+        String incHash=RestoreFileStorage.hash(inc),farmHash=RestoreFileStorage.hash(farm);
+        RestoreFileStorage s=new RestoreFileStorage(root,port,settings(true));
+        s.prepare();s.publish(NONE,PENDING);
+        try{
+            boolean full=false;
+            try(FileChannel channel=FileChannel.open(fill,StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE)){
+                ByteBuffer page=ByteBuffer.allocate(4096);long written=0;
+                // Hard bound independent of free-space estimates.
+                while(written<=capacity+4096){
+                    page.clear();
+                    while(page.hasRemaining()){
+                        int n=channel.write(page);
+                        if(n<=0)throw new IOException("No progress filling isolated mount");
+                        written+=n;
+                    }
+                }
+            }catch(IOException e){
+                assertTrue("Expected kernel ENOSPC, got "+e,actualNoSpace(e));full=true;
+            }
+            assertTrue("Kernel ENOSPC not reached",full);
+            boolean refused=false;
+            try{s.applyIncubation();}
+            catch(IOException e){
+                assertTrue("Expected actual restore ENOSPC, got "+e,actualNoSpace(e));refused=true;
+            }
+            assertTrue("Restore unexpectedly succeeded on full mount",refused);
+            assertEquals(PENDING,s.readPhase());
+            assertEquals(incHash,RestoreFileStorage.hash(inc));
+            assertEquals(farmHash,RestoreFileStorage.hash(farm));
+            assertTrue(Files.exists(work.resolve("old-inc.db")));
+            assertTrue(Files.exists(work.resolve("old-farm.db")));
+            assertArrayEquals(settings(false),port.read());
+        }finally{Files.deleteIfExists(fill);}
+        assertEquals(OLD_GENERATION,new RestoreProtocol(new RestoreFileStorage(root,port,null)).recover());
+        assertEquals(NONE,s.readPhase());
+        assertEquals(incHash,RestoreFileStorage.hash(inc));assertEquals(farmHash,RestoreFileStorage.hash(farm));
+        assertEquals("old-inc",value(inc));assertEquals("old-farm",value(farm));
+        assertArrayEquals(settings(false),port.read());assertEquals("keep",prefs.getString("unrelated",null));
+        witness(root.resolve("enospc-verified.txt"),"ANDROID_ENOSPC_PASS "+capacity+" "+Process.myPid());
+    }
 }
