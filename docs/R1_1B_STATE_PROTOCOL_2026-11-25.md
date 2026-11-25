@@ -29,3 +29,7 @@
 ## Следующий шаг
 
 После подтверждённого PASS модели — R1.1b-2: реализация file/prefs adapter с durable journal и старым marker, проверки повторного восстановления с реальными файлами, ограничений места и ошибок записи. R1.1b-3: единый barrier + audit всех точек доступа, защита stale notification. До совместного подтверждения не подключать частичную реализацию к production/не объединять PR #8. Существующий issue #5 открыт.
+
+## Проверка c40b09e
+
+[CI 45534712465](https://github.com/DarrenDorr/nasedka-android/actions/runs/45534712465), job 138938361639 SUCCESS. Лог подтверждает `:app:testGithubDebugUnitTest` без UP-TO-DATE/FROM-CACHE и BUILD SUCCESSFUL; три APK и test APK собраны. XML не публиковался, независимый счёт 9/9 не установлен. Групповой CI PASS позволяет продолжить изолированную -2a. Новый gate требует все 9 + 8 методов, 0 failures/errors/skipped. Не закрывать evidence до отчёта.
