@@ -1,0 +1,432 @@
+[
+  {
+    "id": "DES-000",
+    "section": "young",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-000__young-transfer-group-card.png",
+    "original": "Nasedka_UI_Молодняк_перенос_и_уход_макет.png",
+    "sha256": "53ce802f4ff8cfd22ccc8bc96282864634e84655fcecec3400f91124c5aee4fd",
+    "size": 517618,
+    "dimensions": "1672x941"
+  },
+  {
+    "id": "DES-001",
+    "section": "flock",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-001__flock-groups-movement.png",
+    "original": "Nasedka_UI_Поголовье_макет_для_согласования.png",
+    "sha256": "46147aa2ee38fc4e6380d4fedb80fc6a25542b1714138ef327ac5bd089e825dd",
+    "size": 446277,
+    "dimensions": "1672x941"
+  },
+  {
+    "id": "DES-002",
+    "section": "general",
+    "role": "locked",
+    "filename": "assets/approved/DES-002__HOME-EXACT-REFERENCE.png",
+    "original": "Nasedka_Главная_утверждённый_шаблон.png",
+    "sha256": "999fb1279ebbf3e922dbdab0d1cb25021755d28d958c706577ff12d9348d3909",
+    "size": 1552408,
+    "dimensions": "993x2346"
+  },
+  {
+    "id": "DES-003",
+    "section": "general",
+    "role": "locked",
+    "filename": "assets/approved/DES-003__INCUBATION-EXACT-REFERENCE.png",
+    "original": "Nasedka_Инкубация_эталон.png",
+    "sha256": "b605f22e229e8fa8fbb23dd8acd185f579eba3a739567d3cc6ec4ab023bcdf2b",
+    "size": 1244444,
+    "dimensions": "957x2334"
+  },
+  {
+    "id": "DES-004",
+    "section": "incubation",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-004__final-days-hatch.png",
+    "original": "a_bright_colorful_promotional_app_interface_scene.png",
+    "sha256": "9721e066552e0cd9aa5b018761f5ad0de9ccd1e1215c2684c96964e91b926d2c",
+    "size": 2222178,
+    "dimensions": "1670x941"
+  },
+  {
+    "id": "DES-005",
+    "section": "hen",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-005__hen-daily-observations-and-hatch.png",
+    "original": "a_bright_detailed_app_ui_concept_image_in_russian.png",
+    "sha256": "0d91345a54b1f15b6188eb1cb90e392cf6e45917b4420cda152e7b8d121cf708",
+    "size": 2297278,
+    "dimensions": "1671x941"
+  },
+  {
+    "id": "DES-006",
+    "section": "incubation",
+    "role": "reference",
+    "filename": "assets/concepts/DES-006__incubator-setup-flow.png",
+    "original": "a_bright_detailed_ui_mockup_collage_showing_a_mul.png",
+    "sha256": "d9315dd099e5d0b14191c2cd8bc8a9eed013429b81127c57b208d3c9c02e781e",
+    "size": 2149760,
+    "dimensions": "1536x1024"
+  },
+  {
+    "id": "DES-007",
+    "section": "young",
+    "role": "reference",
+    "filename": "assets/concepts/DES-007__young-care-welcome.png",
+    "original": "a_bright_detailed_ui_mockup_image_in_a_cheerful_f.png",
+    "sha256": "a0d31a2f933664f1a6e076eebd2bfa352d3dbfceabfda36d5a2aae78a55ce5b6",
+    "size": 2295168,
+    "dimensions": "1670x942"
+  },
+  {
+    "id": "DES-008",
+    "section": "incubation",
+    "role": "reference",
+    "filename": "assets/concepts/DES-008__incubator-preparation-stage.png",
+    "original": "a_bright_highly_detailed_colorful_ui_illustratio.png",
+    "sha256": "aa84dc6a0961adced5fd9b1504246de86689527489ecadbc0e457adb2b8b6d96",
+    "size": 2295834,
+    "dimensions": "1672x941"
+  },
+  {
+    "id": "DES-009",
+    "section": "history",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-009__record-changes-delete-audit.png",
+    "original": "a_colorful_detailed_multi_panel_app_ui_composite.png",
+    "sha256": "8f3a714afc35d1cd09e202bcba8e7748f42d9863e7c856acebec136804757af5",
+    "size": 2188769,
+    "dimensions": "1671x941"
+  },
+  {
+    "id": "DES-010",
+    "section": "hen",
+    "role": "reference",
+    "filename": "assets/concepts/DES-010__hen-preparation-5-screen.png",
+    "original": "a_detailed_colorful_infographic_like_composite_of.png",
+    "sha256": "e3518702e2c490a8970a72671e1523b50dbc33282b7285584e2959ec94adc9f6",
+    "size": 2285407,
+    "dimensions": "1536x1024"
+  },
+  {
+    "id": "DES-011",
+    "section": "news",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-011__news-feed-articles-updates.png",
+    "original": "a_detailed_colorful_ui_design_mockup_composite_fo.png",
+    "sha256": "d8ba87c862d59846d77852a0f31adb9552ab97d947649aa238e6d3aa42135d70",
+    "size": 2213652,
+    "dimensions": "1536x1024"
+  },
+  {
+    "id": "DES-012",
+    "section": "incubation",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-012__incubator-model-capacity-options.png",
+    "original": "a_detailed_colorful_ui_illustration_for_a_rural_p.png",
+    "sha256": "3d218b5405daa62fc38aa168297375217e29c34fb64b2d9b81f781a8f9766d4d",
+    "size": 2205774,
+    "dimensions": "1536x1024"
+  },
+  {
+    "id": "DES-013",
+    "section": "hen",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-013__hen-preparation-start.png",
+    "original": "a_detailed_colorful_ui_illustration_in_a_rustic_g.png",
+    "sha256": "86d60eaf07918727ae64ad4704eabd95dc33e898520772e515bd16d585e2dab9",
+    "size": 2284452,
+    "dimensions": "1672x941"
+  },
+  {
+    "id": "DES-014",
+    "section": "onboarding",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-014__welcome-and-chick-care.png",
+    "original": "a_detailed_colorful_ui_mockup_collage_for_the_mob.png",
+    "sha256": "539e619155ab0857a72b15c5d1973d116475b64fb814c9c38b37a60fbb72a12e",
+    "size": 2413822,
+    "dimensions": "1670x942"
+  },
+  {
+    "id": "DES-015",
+    "section": "settings",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-015__settings-general-notifications.png",
+    "original": "a_detailed_colorful_ui_mockup_collage_in_russian.png",
+    "sha256": "19f6f40f7b237e3ec1dea9316956ce4aae9f923ef685391a0fea0a1bce988039",
+    "size": 2226487,
+    "dimensions": "1536x1024"
+  },
+  {
+    "id": "DES-016",
+    "section": "incubation",
+    "role": "reference",
+    "filename": "assets/concepts/DES-016__incubator-preparation-early.png",
+    "original": "a_detailed_illustrative_ui_mockup_in_a_warm_green.png",
+    "sha256": "968435a4168626a53b688a36b539852702cd2e32956b5bdf25d10ccc5d6f130b",
+    "size": 2252282,
+    "dimensions": "1672x941"
+  },
+  {
+    "id": "DES-017",
+    "section": "journal",
+    "role": "superseded",
+    "filename": "assets/historical/DES-017__journal-earlier-duplicated.png",
+    "original": "a_detailed_polished_ui_concept_composite_poster_i.png",
+    "sha256": "9c8c21b0fc9c507ea03fdf3c59adba5fd00c3f9b4f254f0f26a73c8f7cc218f5",
+    "size": 2122357,
+    "dimensions": "1536x1024"
+  },
+  {
+    "id": "DES-018",
+    "section": "settings",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-018__settings-notifications-privacy.png",
+    "original": "a_detailed_polished_ui_design_collage_in_the_same.png",
+    "sha256": "d09006325f9eda4cde462c98fdde0573e1f935753e78623a0f3dcfee91ebf049",
+    "size": 2215992,
+    "dimensions": "1536x1024"
+  },
+  {
+    "id": "DES-019",
+    "section": "journal",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-019__journal-unified-list-calendar.png",
+    "original": "a_detailed_ui_design_poster_concept_art_for_a_mobi.png",
+    "sha256": "df51a2c2ecef5fe05aa1dfe7a03429797f41c2b124506407f38368243d16e29f",
+    "size": 2168795,
+    "dimensions": "1536x1024"
+  },
+  {
+    "id": "DES-020",
+    "section": "young",
+    "role": "reference",
+    "filename": "assets/concepts/DES-020__onboarding-young-recommendations.png",
+    "original": "a_highly_detailed_colorful_app_ui_presentation_co.png",
+    "sha256": "081b9f802f1a1ee4d053bb1e568b77a74ee277d08e76ca380b0f5c97810b7e0e",
+    "size": 2356818,
+    "dimensions": "1670x941"
+  },
+  {
+    "id": "DES-021",
+    "section": "eggs",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-021__egg-collection-four-screens.png",
+    "original": "a_highly_detailed_colorful_polished_app_ui_mocku.png",
+    "sha256": "b1d7210017a9594cd43cd66a4eb6132a9cb97eb1e0789aeb6476c3e35451aec3",
+    "size": 2210658,
+    "dimensions": "1671x941"
+  },
+  {
+    "id": "DES-022",
+    "section": "reports",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-022__analytics-reports.png",
+    "original": "a_highly_detailed_colorful_polished_ui_mockup_co.png",
+    "sha256": "cb1d6ffcab5bf6fa90fa4b38685aea45ff0d601d3650300a746141efedabeb52",
+    "size": 2149328,
+    "dimensions": "1671x941"
+  },
+  {
+    "id": "DES-023",
+    "section": "journal",
+    "role": "superseded",
+    "filename": "assets/historical/DES-023__journal-first-iteration.png",
+    "original": "a_highly_detailed_colorful_ui_concept_image_in_ru.png",
+    "sha256": "d30e2edf7996b38488efaec6a3f3732ad4330dc7df7b2abc5ae3734604c01a8c",
+    "size": 2132203,
+    "dimensions": "1670x941"
+  },
+  {
+    "id": "DES-024",
+    "section": "incubation",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-024__incubation-results-and-hatch.png",
+    "original": "a_polished_colorful_mobile_app_ui_composite_in_a.png",
+    "sha256": "90f633adb15006c2862a4529893ea276792c7107d5dbeab2d80417ebc66858b8",
+    "size": 2209413,
+    "dimensions": "1670x941"
+  },
+  {
+    "id": "DES-025",
+    "section": "finance",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-025__finance-costs-and-income.png",
+    "original": "a_richly_detailed_colorful_ui_mockup_composite_sh.png",
+    "sha256": "a82d9735f891493868263037798342e3018e97f87577f87c874b2f08ea59e257",
+    "size": 2080628,
+    "dimensions": "1670x942"
+  },
+  {
+    "id": "DES-026",
+    "section": "incubation",
+    "role": "reference",
+    "filename": "assets/concepts/DES-026__incubation-full-workflow.png",
+    "original": "a_vibrant_detailed_ui_mockup_collage_for_a_poultr.png",
+    "sha256": "fcb35f340c0071269550ab40d40216a4fa99514b1fbfea1137b0c074229aad7b",
+    "size": 2227068,
+    "dimensions": "1670x941"
+  },
+  {
+    "id": "DES-027",
+    "section": "young",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-027__young-care-age-guidance.png",
+    "original": "a_wide_colorful_highly_detailed_promotional_ui_u.png",
+    "sha256": "7ec476187cdff4488b5e2f6b0e9253163c1dfcd05ce39e99987dee1404d8ecda",
+    "size": 2408968,
+    "dimensions": "1671x941"
+  },
+  {
+    "id": "DES-028",
+    "section": "hen",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-028__hen-first-days-after-hatch.png",
+    "original": "a_wide_colorful_promotional_style_app_interface_g.png",
+    "sha256": "946b2ce5e35ba36a955497ff9106d8dc20960dd070bc38f9092c10bddbf976cd",
+    "size": 2318452,
+    "dimensions": "1672x941"
+  },
+  {
+    "id": "DES-029",
+    "section": "eggs",
+    "role": "superseded",
+    "filename": "assets/historical/DES-029__egg-expanded-draft-and-edge-scenarios.png",
+    "original": "a_wide_colorful_promotional_ui_composite_image_m.png",
+    "sha256": "893a309df64ae9d0a3ed1b01c95ea9889795bacd0302ff39b7eb21bdae46e8af",
+    "size": 2286603,
+    "dimensions": "1670x941"
+  },
+  {
+    "id": "DES-030",
+    "section": "notifications",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-030__notifications-tasks-reminders.png",
+    "original": "a_wide_colorful_promotional_ui_illustration_a_la.png",
+    "sha256": "171c01e1ca911b90d55782efc091fdd7f2ad2265a261be37039ae0bf03aa8d19",
+    "size": 2260166,
+    "dimensions": "1672x941"
+  },
+  {
+    "id": "DES-031",
+    "section": "young",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-031__young-group-age-and-mother.png",
+    "original": "a_wide_colorful_promotional_ui_mockup_in_russian.png",
+    "sha256": "7cd2cd1abe64027e2806f2c5590b171e9dcf25aeee3637970dd604a5b1f07f8b",
+    "size": 2272042,
+    "dimensions": "1670x941"
+  },
+  {
+    "id": "DES-032",
+    "section": "incubation",
+    "role": "reference",
+    "filename": "assets/concepts/DES-032__incubator-preparation-later.png",
+    "original": "a_wide_colorful_promotional_ui_mockup_scene_a_bri.png",
+    "sha256": "bdfd8ae30ee286a390a0d2841ada590682a6a8d5cea0f9286a576b26d383a015",
+    "size": 2209756,
+    "dimensions": "1671x941"
+  },
+  {
+    "id": "DES-033",
+    "section": "incubation",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-033__incubator-daily-calendar-observations.png",
+    "original": "a_wide_detailed_promotional_ui_mockup_image_in_ru.png",
+    "sha256": "cb0df9deb99777e5c9de85999a9f930f4d4a65707cbdebf7ea6f6be53a6c7ea3",
+    "size": 2162598,
+    "dimensions": "1671x941"
+  },
+  {
+    "id": "DES-034",
+    "section": "incubation",
+    "role": "reference",
+    "filename": "assets/concepts/DES-034__incubator-wizard-full.png",
+    "original": "a_wide_detailed_ui_mockup_composition_in_the_same.png",
+    "sha256": "3993502e3f7824786afd4e7853ca1316dcf62bbb439928736c317ac9bb9668d3",
+    "size": 2272627,
+    "dimensions": "1536x1024"
+  },
+  {
+    "id": "DES-035",
+    "section": "backup",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-035__backup-restore-and-schedules.png",
+    "original": "a_wide_high_detail_colorful_ui_illustration_in_a.png",
+    "sha256": "3e2cdc649213aa9ddd3c1adfae101bbd27455fbc1314b240f513b2cc8de1d511",
+    "size": 2244114,
+    "dimensions": "1671x941"
+  },
+  {
+    "id": "DES-036",
+    "section": "feed",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-036__feeds-and-supplies.png",
+    "original": "a_wide_high_detail_graphic_ui_mockup_of_a_mobile.png",
+    "sha256": "46ad3fa3d734bbeb942dd7b8ba52278e0237df69e07e3368427552f6199a8ea3",
+    "size": 2258367,
+    "dimensions": "1670x942"
+  },
+  {
+    "id": "DES-037",
+    "section": "incubation",
+    "role": "reference",
+    "filename": "assets/concepts/DES-037__incubation-method-selection.png",
+    "original": "a_wide_high_quality_app_ui_promotional_mockup_a.png",
+    "sha256": "11c0a8968802451b471cfca0a2db9966b1a1fbef6f7aa479814463486d75920c",
+    "size": 2079401,
+    "dimensions": "1536x1024"
+  },
+  {
+    "id": "DES-038",
+    "section": "edge-states",
+    "role": "presented",
+    "filename": "assets/concepts/DES-038__empty-errors-lists-drafts.png",
+    "original": "a_wide_highly_detailed_ui_showcase_image_for_the.png",
+    "sha256": "4f74795df60d96d71a27314bbc7af31ab035a5769ffe58f0fdc15eae8b749deb",
+    "size": 2140031,
+    "dimensions": "1670x941"
+  },
+  {
+    "id": "DES-039",
+    "section": "hen",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-039__hen-instructions-and-monitoring.png",
+    "original": "наседка_инструкции_и_наблюдение.png",
+    "sha256": "fd327fbfe27cee46b706acfebaf1afa67e6a571cf0cbd7cd0639c2dff56c74d3",
+    "size": 2335374,
+    "dimensions": "1672x941"
+  },
+  {
+    "id": "DES-040",
+    "section": "general",
+    "role": "historical",
+    "filename": "assets/historical/DES-040__early-alternative-style.png",
+    "original": "наседка_интерфейс_фермерского_приложения.png",
+    "sha256": "f0df37e8583d66fd63052fbeaeb9eef6d83d5289021d092284b6faa68a264da0",
+    "size": 1800518,
+    "dimensions": "1672x941"
+  },
+  {
+    "id": "DES-041",
+    "section": "incubation",
+    "role": "approved_concept",
+    "filename": "assets/concepts/DES-041__incubation-egg-count.png",
+    "original": "наседка_учёт_яиц_в_инкубации.png",
+    "sha256": "d45adec40138348b6a6b3291c63156241b6419779649682f5bf6db28b13847da",
+    "size": 2083973,
+    "dimensions": "1672x941"
+  },
+  {
+    "id": "DES-042",
+    "section": "general",
+    "role": "locked",
+    "filename": "assets/approved/DES-042__MASTER-5-SCREEN-DESIGN.png",
+    "original": "наседка_фермерский_ui_концепт.png",
+    "sha256": "441b82dd618405082dddfe1f04c988637720261067906e25d2d1a8214c54a730",
+    "size": 1971488,
+    "dimensions": "1672x941"
+  }
+]
