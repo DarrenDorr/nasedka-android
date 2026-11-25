@@ -126,7 +126,7 @@ public class BackupReliabilityTest {
         }
     }
     // Exact schema from FarmDb.java at 535417a2be877491d40b7b3cfaa6915c8eaf0374.
-    private static void createFarmV1(SQLiteDatabase db) {
+    static void createFarmV1(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE flock (id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL,species TEXT NOT NULL,breed TEXT NOT NULL,place TEXT NOT NULL,since INTEGER NOT NULL)");
         db.execSQL("CREATE TABLE flock_moves (id INTEGER PRIMARY KEY AUTOINCREMENT,flock_id INTEGER NOT NULL,at INTEGER NOT NULL,kind TEXT NOT NULL,delta INTEGER NOT NULL,note TEXT NOT NULL DEFAULT '')");
         db.execSQL("CREATE INDEX fm_flock ON flock_moves(flock_id,at DESC)");
@@ -147,7 +147,7 @@ public class BackupReliabilityTest {
     }
     // Reconstructed by reversing the documented ALTER TABLE in Db.onUpgrade.
     // The earliest repository revision already has v2; not an archival v1 APK.
-    private static void createIncV1(SQLiteDatabase db) {
+    static void createIncV1(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE batches (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, species TEXT NOT NULL, incubator_model TEXT NOT NULL, eggs INTEGER NOT NULL, duration INTEGER NOT NULL, started_at INTEGER NOT NULL, manual_turn INTEGER NOT NULL, spray INTEGER NOT NULL, target_temp REAL NOT NULL, active INTEGER NOT NULL DEFAULT 1, hatched INTEGER NOT NULL DEFAULT 0)");
         db.execSQL("CREATE TABLE entries (id INTEGER PRIMARY KEY AUTOINCREMENT, batch_id INTEGER NOT NULL, time INTEGER NOT NULL, temperature REAL, humidity REAL, text TEXT NOT NULL DEFAULT '')");
         db.execSQL("CREATE INDEX entries_by_batch ON entries(batch_id, time DESC)");

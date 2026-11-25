@@ -123,4 +123,67 @@ public class RestoreStartupFilesTest {
         Files.copy(inc,remnant);String hash=RestoreFileStorage.hash(remnant);
         blocked();assertEquals(hash,RestoreFileStorage.hash(remnant));assertNull(settings.generation());
     }
+
+    private void v1(Path path,boolean incubation)throws Exception{
+        try(SQLiteDatabase db=SQLiteDatabase.openOrCreateDatabase(path.toFile(),null)){
+            if(incubation)BackupReliabilityTest.createIncV1(db);
+            else BackupReliabilityTest.createFarmV1(db);
+        }
+        RestoreSqlitePreparation.prepareClosed(path);
+    }
+    private int version(Path path){
+        try(SQLiteDatabase db=SQLiteDatabase.openDatabase(path.toString(),null,SQLiteDatabase.OPEN_READONLY|SQLiteDatabase.NO_LOCALIZED_COLLATORS)){
+            return db.getVersion();
+        }
+    }
+    private String scalar(Path path,String sql){
+        try(SQLiteDatabase db=SQLiteDatabase.openDatabase(path.toString(),null,SQLiteDatabase.OPEN_READONLY|SQLiteDatabase.NO_LOCALIZED_COLLATORS);
+            Cursor c=db.rawQuery(sql,null)){
+            assertTrue(c.moveToFirst());return c.getString(0);
+        }
+    }
+    private void seedV1Pair()throws Exception{
+        v1(inc,true);v1(farm,false);insertBatch(inc,"historical");
+        try(SQLiteDatabase db=SQLiteDatabase.openDatabase(farm.toString(),null,SQLiteDatabase.OPEN_READWRITE)){
+            db.execSQL("INSERT INTO flock(id,name,species,breed,place,since) VALUES(3,'old','chicken','test','test',1)");
+            db.execSQL("INSERT INTO incubator_transfers(batch_id,flock_id,quantity,at) VALUES(7,3,4,1)");
+        }
+        RestoreSqlitePreparation.prepareClosed(farm);
+    }
+    @Test public void actualV1PairMigratesWithoutLosingIdsAndLinks()throws Exception{
+        seedV1Pair();ready();assertEquals(2,version(inc));assertEquals(2,version(farm));
+        assertEquals("historical",batch(inc));
+        assertEquals("nesushka",scalar(inc,"SELECT profile_id FROM batches WHERE id=7"));
+        assertEquals("0",scalar(farm,"SELECT hatched_at FROM flock WHERE id=3"));
+        assertEquals("4",scalar(farm,"SELECT quantity FROM incubator_transfers WHERE batch_id=7 AND flock_id=3"));
+        assertEquals("0",scalar(farm,"SELECT COUNT(*) FROM flock_notes"));
+        UUID issued=settings.generation();reset();ready();assertEquals(issued,settings.generation());
+    }
+    @Test public void mixedSchemaAfterFirstMigrationResumesSecond()throws Exception{
+        seedV1Pair();RestoreSchemaMigration.migrate(context,inc,true,1);
+        assertEquals(2,version(inc));assertEquals(1,version(farm));
+        ready();assertEquals(2,version(farm));assertEquals("historical",batch(inc));
+        assertEquals("4",scalar(farm,"SELECT quantity FROM incubator_transfers WHERE batch_id=7"));
+    }
+    @Test public void historicalV1PartialPairMigratesAndCreatesMissingPartner()throws Exception{
+        v1(inc,true);insertBatch(inc,"preserve");ready();
+        assertEquals(2,version(inc));assertEquals(2,version(farm));assertEquals("preserve",batch(inc));
+    }
+    @Test public void unexpectedPartnerSchemaBlocksBeforeFirstMigration()throws Exception{
+        seedV1Pair();
+        try(SQLiteDatabase db=SQLiteDatabase.openDatabase(farm.toString(),null,SQLiteDatabase.OPEN_READWRITE)){
+            db.execSQL("ALTER TABLE flock ADD COLUMN unexpected TEXT");
+        }
+        RestoreSqlitePreparation.prepareClosed(farm);
+        blocked();assertEquals(1,version(inc));assertEquals(1,version(farm));
+        assertEquals("historical",batch(inc));assertNull(settings.generation());
+        assertEquals("4",scalar(farm,"SELECT quantity FROM incubator_transfers WHERE batch_id=7"));
+    }
+    @Test public void unknownSchemaVersionBlocksWithoutRecreation()throws Exception{
+        seedV1Pair();
+        try(SQLiteDatabase db=SQLiteDatabase.openDatabase(farm.toString(),null,SQLiteDatabase.OPEN_READWRITE)){db.setVersion(99);}
+        RestoreSqlitePreparation.prepareClosed(farm);
+        blocked();assertEquals(1,version(inc));assertEquals(99,version(farm));assertNull(settings.generation());
+        assertEquals("historical",batch(inc));
+    }
 }

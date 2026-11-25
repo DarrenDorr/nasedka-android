@@ -11,7 +11,7 @@ import static org.nasedka.app.RestoreFileStorage.*;
  * Concrete isolated startup backend. Root must be the caller's existing
  * private database directory; no live helpers opened by Application yet.
  * Caller owns the exclusive coordinator for the whole gate attempt.
- * No implicit deletion of ambiguous files, no upgrade of existing schemas.
+ * No implicit deletion of ambiguous files. Only known v1 schemas migrate.
  */
 final class RestoreStartupFiles implements RestoreStartupGate.Backend {
     private static final String INC="incuba.db", FARM=FarmDb.NAME;
@@ -97,9 +97,10 @@ final class RestoreStartupFiles implements RestoreStartupGate.Backend {
         if(now.phase!=RestoreProtocol.Phase.NONE||now.legacyMarker||now.unclassifiedLegacyRemnants||
                 now.v2Artifacts||now.incubation!=before.incubation||now.farm!=before.farm||readGeneration()!=null)
             throw new IOException("Initialization evidence changed");
-        // Validate existing v2 files before creating the absent partner.
-        if(now.incubation)validateSingle(root.resolve(INC),true);
-        if(now.farm)validateSingle(root.resolve(FARM),false);
+        // Inspect the existing v1/v2 partner before creating the absent one;
+        // migration waits until both schemas can be preflighted together.
+        if(now.incubation)RestoreSchemaMigration.inspect(context,root.resolve(INC),true);
+        if(now.farm)RestoreSchemaMigration.inspect(context,root.resolve(FARM),false);
         if(!now.incubation)createMissing(INC,true);
         if(!now.farm)createMissing(FARM,false);
     }
@@ -137,7 +138,12 @@ final class RestoreStartupFiles implements RestoreStartupGate.Backend {
         if(!now.pair()||now.phase!=RestoreProtocol.Phase.NONE||now.legacyMarker||now.unclassifiedLegacyRemnants)
             throw new IOException("Cannot validate unresolved pair");
         Path inc=root.resolve(INC),farm=root.resolve(FARM);
-        validateSingle(inc,true);validateSingle(farm,false);
+        int incVersion=RestoreSchemaMigration.inspect(context,inc,true);
+        int farmVersion=RestoreSchemaMigration.inspect(context,farm,false);
+        // No schema change until both inputs passed preflight. If killed between
+        // the two transactions, next startup accepts the known mixed versions.
+        RestoreSchemaMigration.migrate(context,inc,true,incVersion);
+        RestoreSchemaMigration.migrate(context,farm,false,farmVersion);
         RestoreLegacyRecovery.validatePair(inc,farm);
     }
 }
