@@ -1,0 +1,70 @@
+{
+  "stage": "R1.1b-2b crash/IO attempt 1",
+  "tested_commit": "1cd6384c0fcb47ec51d1cf5dc68876e96eae0355",
+  "build": {
+    "run": 45545039054,
+    "job": 138972491489,
+    "result": "PASS",
+    "jvm": {
+      "artifact": 14990713361,
+      "archive_sha256": "740bd9e9e0e19b6cf31b319300785c18527cc1948125584047cbf175e32d4f6c",
+      "archive_bytes": 1315,
+      "xml_sha256": {
+        "RestoreJournalTest": "75d0d9e5dca69eb73644b4d669d83d94a41ac2505f2a61af59a6ba49f603e035",
+        "RestoreProtocolTest": "e946b94c6598fbb6d2023406a8ac1e6e69908de439324413aedb3c80f570b2ce"
+      },
+      "counts": {
+        "RestoreJournalTest": 8,
+        "RestoreProtocolTest": 9
+      },
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "linux_enospc": {
+      "artifact": 14991067100,
+      "archive_bytes": 247,
+      "archive_sha256": "ca5fda83e0c5f635107339d7c07ecf53496b805688c84961dd23ccd5f6505998",
+      "log_sha256": "e280cd70ca2f9f91edf2a8e5a41d29cdea7098f4a20ffb7656298ba5cc18e6ae",
+      "result": "PASS",
+      "scope": "8 MiB Linux tmpfs; not Android",
+      "log": [
+        "Actual kernel ENOSPC during restore temp write; PENDING and both live files intact",
+        "R1 bounded Linux tmpfs ENOSPC: PASS"
+      ]
+    }
+  },
+  "android": {
+    "run": 45545039049,
+    "job": 138972491631,
+    "result": "FAIL",
+    "api": 35,
+    "artifact": 14990798197,
+    "archive_bytes": 5473,
+    "archive_sha256": "0fd106ec91965a9fbbd1f40bff28e9110eac0f112f2dc00858414152cf90cc0a",
+    "xml_sha256": "dda04f3cd2ac539415b8277afaa792b411afcac7e3fb01726f18844de7c4e7a9",
+    "ordinary": {
+      "counts": {
+        "BackupReliabilityTest": 10,
+        "RestoreFileStorageTest": 19
+      },
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "result": "PASS_XML_INDEPENDENTLY_VERIFIED"
+    },
+    "process_death": {
+      "result": "NOT_RUN",
+      "passed": 0,
+      "planned": 6,
+      "error": "AssertionError: Test runner not installed",
+      "note": "Stopped before first case. Registration unavailable after connectedAndroidTest; exact reason not established."
+    }
+  },
+  "ordinary_tests_passed": 46,
+  "special_scenarios_passed": 1,
+  "not_run": 6,
+  "total_planned": 53,
+  "gate": "HOLD",
+  "verification": "All three ZIP SHA-256 independently matched GitHub digests; three XML reports parsed, ENOSPC log read."
+}

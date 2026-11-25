@@ -50,7 +50,11 @@
 
 **R1.1b-2b продолжение аварийных испытаний:** повторный CI документационного a5948fc SUCCESS ([build 45543274191](https://github.com/DarrenDorr/nasedka-android/actions/runs/45543274191), [Android 45543274189](https://github.com/DarrenDorr/nasedka-android/actions/runs/45543274189)). Добавлены 3 Android tests реального запрета записи, 6 отдельными instrumentation-процессами actual SIGKILL/restart, 1 bounded Linux tmpfs ENOSPC probe. [План и ограничения](R1_1B_CRASH_IO_2026-11-25.md). Новый код только тестовый/CI, production не изменён. NOT_RUN.
 
-**СЛЕДУЮЩИЙ конкретный шаг:** проверить новый CI и evidence: 17 JVM + 29 обычных Android methods, 6 отдельных kill/restart cases, 1 реальный Linux ENOSPC. Проверить результаты/исправить FAIL; Android ENOSPC и финальный аудит открыты. R1.1b-2b HOLD, -3 не начинать, production wiring не выполнен. Дизайн не менять. Полный SAF, конкурентность, crash recovery и реальное обновление остаются в последующих испытаниях R1. 
+**R1.1b-2b аварийные испытания, попытка 1:** build [45545039054](https://github.com/DarrenDorr/nasedka-android/actions/runs/45545039054) SUCCESS; 17 JVM PASS, bounded Linux ENOSPC PASS. Android [45545039049](https://github.com/DarrenDorr/nasedka-android/actions/runs/45545039049) job FAIL после успешных 29 обычных тестов: Test runner not installed, 6 process cases NOT_RUN. Три ZIP и XML/log проверены; 47/53 подтверждены, 6 не выполнены. [Evidence](../security/evidence/R1_1B_CRASH_IO_ATTEMPT1_2026-11-25.json).
+
+**Попытка 2:** явная установка обоих APK после connectedAndroidTest, проверка регистрации runner и target, PID через успешный ps, раздельные обязательные gates ordinary XML / process JSON. Production и тестируемая логика не менялись. NOT_RUN.
+
+**СЛЕДУЮЩИЙ конкретный шаг:** подтвердить все 53 проверки новой редакции, исправить любые FAIL; Android-specific ENOSPC и финальный аудит открыты. R1.1b-2b HOLD, -3 не начинать, production wiring не выполнен. Дизайн не менять. Полный SAF, конкурентность, crash recovery и реальное обновление остаются в последующих испытаниях R1. 
 
 **ПЛАН РЕАЛИЗАЦИИ (только по отдельному согласию на изменение приложения):** R1 — тесты резервных копий, миграций, фоновых уведомлений и сохранения черновиков; R2 — перенос точного визуального каркаса (4 кнопки и Главная); R3 — связанный учёт яиц, единый журнал и история исправлений. Не возвращаться к созданию нового дизайна без запроса.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Execute real process death and independent instrumentation recovery on a fresh CI emulator."""
-import json, os, pathlib, re, subprocess, sys, time
+import json, pathlib, re, subprocess, sys, time
 
 adb, serial, output = sys.argv[1:]
 target = "org.nasedka.app.debug"
@@ -35,16 +35,22 @@ def witness(case, filename):
     return run("shell", "run-as", target, "cat", path).stdout.strip().split()
 
 def gone(pid):
-    # ADB shell observes the kernel PID after the killed instrumentation exits.
+    # A successful process listing is required; an adb error or an
+    # inaccessible /proc directory must never be interpreted as death.
     for _ in range(20):
-        p = run("shell", "test", "!", "-d", "/proc/" + str(pid), check=False)
-        if p.returncode == 0:
+        p = run("shell", "ps", "-A", "-o", "PID")
+        rows = p.stdout.split()
+        assert rows and rows[0] == "PID", f"Unexpected ps output: {p.stdout}"
+        assert all(x.isdecimal() for x in rows[1:]), p.stdout
+        if str(pid) not in rows[1:]:
             return True
         time.sleep(.25)
     return False
 
 results = []
-assert runner in run("shell", "pm", "list", "instrumentation").stdout, "Test runner not installed"
+registered = run("shell", "pm", "list", "instrumentation").stdout
+assert ("instrumentation:" + runner + " (target=" + target + ")") in registered, registered
+assert run("shell", "getprop", "ro.build.version.sdk").stdout.strip() == "35"
 for case, (phase, outcome) in cases.items():
     first = instrument(case, "interruptAtBoundary")
     ready = witness(case, "ready.txt")
