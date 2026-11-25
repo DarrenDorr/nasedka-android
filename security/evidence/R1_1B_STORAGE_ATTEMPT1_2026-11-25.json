@@ -1,0 +1,25 @@
+{
+  "stage": "R1.1b-2b attempt 1",
+  "tested_commit": "27483ba7f0bd8f04b4759ebb134e1dfa2a37325b",
+  "build_run": 45538262692,
+  "build": "PASS",
+  "jvm_tests": 17,
+  "android_run": 45538262704,
+  "android_job": 138950136582,
+  "artifact_id": 14987463996,
+  "archive_sha256": "290b2223e116599e34ef28e489c1e5640188736a24fd9c1b0eecb8db80f5058e",
+  "xml_sha256": "7b5a6f415b6fc764dc5475b97203388b5b1d6f338525b83dcd7299eb27c26109",
+  "android_tests": 15,
+  "passed": 11,
+  "failures": 4,
+  "errors": 0,
+  "skipped": 0,
+  "failed": [
+    "recoverAfterOneFileReplacement",
+    "restoreTwoSqliteFilesAndSettings",
+    "failedSettingsWriteAfterBothDatabasesRecovers",
+    "corruptRollbackSourceKeepsJournalAndOtherCopies"
+  ],
+  "gate": "HOLD",
+  "note": "Three failures at SQLite sidecar guard during prepare; one PENDING assertion received NONE before settings fault. Actual suffix unknown."
+}

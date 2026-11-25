@@ -5,7 +5,12 @@ on:
       - 'app/src/main/java/org/nasedka/app/BackupStore.java'
       - 'app/src/main/java/org/nasedka/app/Db.java'
       - 'app/src/main/java/org/nasedka/app/FarmDb.java'
+      - 'app/src/main/java/org/nasedka/app/Restore*.java'
+      - 'app/src/main/java/org/nasedka/app/DataAccessCoordinator.java'
+      - 'app/src/test/java/org/nasedka/app/DataAccessCoordinatorTest.java'
       - 'app/src/androidTest/**'
+      - 'tools/r1/process_death.py'
+      - 'tools/r1/android_enospc.sh'
       - 'app/build.gradle'
       - '.github/workflows/r1-android-sqlite.yml'
   workflow_dispatch:
@@ -96,8 +101,22 @@ jobs:
           api="$("$adb" -s "$serial" shell getprop ro.build.version.sdk | tr -d '\r')"
           test "$api" = 35
           "$adb" devices -l
-          gradle --no-daemon connectedGithubDebugAndroidTest
+          gradle --no-daemon connectedGithubDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.notClass=org.nasedka.app.RestoreProcessDeathTest
+          # connectedAndroidTest owns installation/cleanup; its APKs need not
+          # remain installed after the standard test run. Reinstall explicitly.
+          mkdir -p "$RUNNER_TEMP/r1-process-death"
+          mapfile -t app_apks < <(find app/build/outputs/apk/github/debug -type f -name '*.apk' | sort)
+          mapfile -t test_apks < <(find app/build/outputs/apk/androidTest/github/debug -type f -name '*.apk' | sort)
+          test "${#app_apks[@]}" = 1
+          test "${#test_apks[@]}" = 1
+          "$adb" -s "$serial" install -r -t "${app_apks[0]}"
+          "$adb" -s "$serial" install -r -t "${test_apks[0]}"
+          "$adb" -s "$serial" shell pm list instrumentation | tee "$RUNNER_TEMP/r1-process-death/instrumentation-list.txt"
+          grep -F 'instrumentation:org.nasedka.app.debug.test/androidx.test.runner.AndroidJUnitRunner (target=org.nasedka.app.debug)' "$RUNNER_TEMP/r1-process-death/instrumentation-list.txt"
+          python3 tools/r1/process_death.py "$adb" "$serial" "$RUNNER_TEMP/r1-process-death"
+          bash tools/r1/android_enospc.sh "$adb" "$serial" "$RUNNER_TEMP/r1-android-enospc"
       - name: Verify actual test execution (no empty PASS)
+        if: always()
         shell: bash
         run: |
           python3 - <<'PY'
@@ -115,9 +134,66 @@ jobs:
               "legacyOnlyHatchedAtDefaultIsNormalized",
           }
           names = {c.get("name") for c in cases}
-          assert expected <= names, f"Missing executed tests: {expected - names}"
+          assert names == expected and len(cases) == len(expected), f"Wrong executed tests: {names}"
           assert all(not any(c.find(t) is not None for t in ("failure","error","skipped")) for c in cases), "Failure or skipped test"
           print(f"R1: {len(cases)} executed Android SQLite tests; required methods present.")
+          storage_cases = [c for p in files for c in ET.parse(p).getroot().iter("testcase")
+                           if c.get("classname","").endswith(".RestoreFileStorageTest")]
+          storage_expected = set(["restoreTwoSqliteFilesAndSettings","recoverAfterOneFileReplacement","failedSettingsWriteAfterBothDatabasesRecovers","corruptRollbackSourceKeepsJournalAndOtherCopies","legacyMarkerAndSidecarsBlockBeforeMutation","preparedWalPreservesCommittedRows","missingSqliteIsNotCreatedByPreparation","insufficientSpaceRejectsBeforeJournalOrLiveChanges","settingsFailureAfterWriteStillRollsBack","repeatedRecoveryAfterPartialRollback","committedRecoveryAfterPartialCleanupRetainsNewData","legacyRecoveryAcrossAllFiveRenamePrefixes","legacyRecoveryRepeatsAfterFirstCopy","legacyAmbiguousOrMalformedMarkerPreservesFiles","legacyConflictingJournalOrFailedValidationBlocksReplacement","legacyRecoveryValidatesRealVersionTwoSchemas","realWriteDenialDuringApplyRetainsPending","realWriteDenialDuringCommitPublicationRollsBack","realWriteDenialDuringRollbackPreservesSources","ambiguousCommittedForceRetainsCopiesUntilResynced","ambiguousRolledBackForceRetainsCopiesUntilResynced","ambiguousJournalRemovalRequiresDurableAbsence","generationCommitAndRollbackPreserveCorrectUuid","legacySettingsEncodingRemainsByteIdenticalAndRemovesGeneration","malformedGenerationAndUnknownVersionRejectWithoutMutation","targetGenerationIgnoresImportedUuidAndSchedulerState","generationTokenChangesOnlyAfterVerifiedRestoreOutcome","startupGenerationInitializationIsStableAndPreservesSettings","falseCommitQuarantinesCachedGenerationAcrossAdapterInstances","falseCommitDuringRestoreRetainsPendingAndBlocksSameProcessRecovery"])
+          assert len(storage_cases) == len(storage_expected), "Wrong storage test count"
+          assert {c.get("name") for c in storage_cases} == storage_expected, "Missing/unexpected storage tests"
+          assert all(not any(c.find(t) is not None for t in ("failure","error","skipped")) for c in storage_cases)
+          print(f"R1: {len(storage_cases)} executed Android file storage tests; required methods present.")
+          startup_cases = [c for p in files for c in ET.parse(p).getroot().iter("testcase")
+                           if c.get("classname","") == "org.nasedka.app.RestoreStartupFilesTest"]
+          startup_expected = set(["freshStartupCreatesActualSchemasAndStableGeneration","historicalPartialPairPreservesExistingRows","establishedMissingDatabaseIsNotRecreated","orphanSidecarOrInitializationStageBlocksCreation","malformedJournalAndLegacyConflictPreserveEvidence","v2PendingRecoveredBeforeOpeningActualPair","corruptDatabaseIsPreservedAndPartnerNotCreated","legacyRemnantsWithoutMarkerRemainBlockedAndUntouched","actualV1PairMigratesWithoutLosingIdsAndLinks","mixedSchemaAfterFirstMigrationResumesSecond","historicalV1PartialPairMigratesAndCreatesMissingPartner","unexpectedPartnerSchemaBlocksBeforeFirstMigration","unknownSchemaVersionBlocksWithoutRecreation"])
+          assert len(startup_cases) == len(startup_expected)
+          assert {c.get("name") for c in startup_cases} == startup_expected
+          assert all(not any(c.find(t) is not None for t in ("failure","error","skipped")) for c in startup_cases)
+          print(f"R1: {len(startup_cases)} executed Android startup file tests; required methods present.")
+          PY
+      - name: Verify process death evidence (six independent recoveries)
+        if: always()
+        shell: bash
+        run: |
+          python3 - "$RUNNER_TEMP/r1-process-death/process-death.json" <<'PY'
+          import json, sys
+          with open(sys.argv[1], encoding="utf-8") as f:
+              data = json.load(f)
+          expected = {
+              "prepared": ("NONE", "NO_PENDING"),
+              "first-db": ("PENDING", "OLD_GENERATION"),
+              "settings": ("PENDING", "OLD_GENERATION"),
+              "committed": ("COMMITTED", "NEW_GENERATION"),
+              "rollback": ("PENDING", "OLD_GENERATION"),
+              "rolled-back-cleanup": ("ROLLED_BACK", "OLD_GENERATION"),
+          }
+          assert data["api"] == 35
+          cases = data["cases"]
+          assert len(cases) == len(expected)
+          assert {c["case"] for c in cases} == set(expected)
+          for c in cases:
+              assert (c["phase"], c["outcome"]) == expected[c["case"]]
+              assert c["result"] == "PASS"
+              assert c["killed_pid"] > 0 and c["recovery_pid"] > 0
+              assert c["killed_pid"] != c["recovery_pid"]
+          print("R1 process death evidence: 6 distinct cases verified")
+          PY
+      - name: Verify Android bounded ENOSPC evidence
+        if: always()
+        shell: bash
+        run: |
+          python3 - "$RUNNER_TEMP/r1-android-enospc" <<'PY'
+          import pathlib, re, sys
+          p=pathlib.Path(sys.argv[1])
+          witness=(p/"verified.txt").read_text().strip().split()
+          assert len(witness)==3 and witness[0]=="ANDROID_ENOSPC_PASS"
+          assert 4*1024*1024 <= int(witness[1]) <= 16*1024*1024
+          assert int(witness[2])>0
+          log=(p/"instrumentation.log").read_text()
+          assert re.search(r"OK\s*\(1 test\)",log) and "INSTRUMENTATION_CODE: -1" in log
+          assert " tmpfs " in (p/"mount.txt").read_text()
+          print("R1 Android bounded ENOSPC evidence verified")
           PY
       - name: Preserve small test evidence
         if: always()
@@ -127,5 +203,7 @@ jobs:
           path: |
             app/build/outputs/androidTest-results/connected/**/*.xml
             ${{ runner.temp }}/r1-emulator.log
+            ${{ runner.temp }}/r1-process-death/**
+            ${{ runner.temp }}/r1-android-enospc/**
           retention-days: 3
           if-no-files-found: warn

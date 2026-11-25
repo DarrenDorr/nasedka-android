@@ -1,0 +1,113 @@
+{
+  "stage": "R1.1b-2b Android ENOSPC",
+  "tested_commit": "fe2da619baaa03a6af2543cdfa2d3831439f39c5",
+  "build": {
+    "run": 45547940828,
+    "job": 138981933458,
+    "result": "PASS",
+    "jvm": {
+      "artifact": 14992206661,
+      "archive_sha256": "49147cf4018666df68442c926516337e551e21862d7b35494607f6fde88e977f",
+      "xml_sha256": {
+        "RestoreJournalTest": "ed6206adf241a9c3177577e1d06e6389fec776eeb5a49f8d17feb7aecba8a01a",
+        "RestoreProtocolTest": "c4ad5abfcabae2853712d0c2851038089088787d822a633d08136a1638ac5411"
+      },
+      "counts": {
+        "RestoreJournalTest": 8,
+        "RestoreProtocolTest": 9
+      },
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "linux_enospc": {
+      "artifact": 14992211651,
+      "archive_sha256": "2041182cacb95215b32b1a9188ed599cb57d82bea7b8a40d221d033e6f2a6f5a",
+      "log_sha256": "e280cd70ca2f9f91edf2a8e5a41d29cdea7098f4a20ffb7656298ba5cc18e6ae",
+      "result": "PASS"
+    }
+  },
+  "android": {
+    "run": 45547940810,
+    "job": 138981933040,
+    "result": "PASS",
+    "api": 35,
+    "artifact": 14991849059,
+    "archive_sha256": "83e24cc03210041a5e2e31003bf9091b85d4c97604f14f1eea6fb34e2434a6df",
+    "archive_bytes": 12187,
+    "xml_sha256": "1adec92dc15d8b75b2cb83a82aa86275d5d1b83945ac6fdb2766269de076a4ad",
+    "counts": {
+      "BackupReliabilityTest": 10,
+      "RestoreFileStorageTest": 19
+    },
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "process_json_sha256": "f4b5ac196a8aac543ec6c0c23f96f33063787ce98fe4de48a226f52dd598a15d",
+    "process_cases": [
+      {
+        "name": "prepared",
+        "phase": "NONE",
+        "killed_pid": 3964,
+        "recovery_pid": 4047,
+        "outcome": "NO_PENDING",
+        "result": "PASS"
+      },
+      {
+        "name": "first-db",
+        "phase": "PENDING",
+        "killed_pid": 4079,
+        "recovery_pid": 4126,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "settings",
+        "phase": "PENDING",
+        "killed_pid": 4174,
+        "recovery_pid": 4242,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "committed",
+        "phase": "COMMITTED",
+        "killed_pid": 4280,
+        "recovery_pid": 4313,
+        "outcome": "NEW_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "rollback",
+        "phase": "PENDING",
+        "killed_pid": 4351,
+        "recovery_pid": 4384,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "rolled-back-cleanup",
+        "phase": "ROLLED_BACK",
+        "killed_pid": 4427,
+        "recovery_pid": 4468,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      }
+    ],
+    "enospc": {
+      "result": "PASS",
+      "capacity_bytes": 8388608,
+      "pid": 4571,
+      "mount_sha256": "873730229eaf5750b9295b903250ac636bb2d3d65b5d9f69761cf196d9c124cb",
+      "witness_sha256": "b524f0a683cce74f1272b42249f581022acc3aaa4cc8e1b1699fe718675f2b8b",
+      "witness": "ANDROID_ENOSPC_PASS 8388608 4571",
+      "scope": "Android API35 isolated tmpfs, SELinux Enforcing; settings on regular app partition; not physical flash/power loss"
+    }
+  },
+  "ordinary_passed": 46,
+  "special_passed": 8,
+  "total_passed": 54,
+  "not_run": 0,
+  "gate": "PASS_TESTED_SCOPE; R1.1b-2b HOLD",
+  "verification": "All 3 ZIP SHA-256 matched GitHub digests; 3 XML reports parsed; process JSON, Android mount and witness, Linux log checked."
+}

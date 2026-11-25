@@ -1,0 +1,164 @@
+{
+  "stage": "R1.1b-3c-2b-1",
+  "tested_commit": "ba7bf55f0f521c7ff248f33c75c93bd6572ec2c9",
+  "gate": "PASS_R1_1B_3C2B1_ISOLATED_SCOPE",
+  "build": {
+    "run": 45564507540,
+    "job": 139035921150,
+    "result": "PASS",
+    "jvm": {
+      "artifact": 14998574388,
+      "archive_bytes": 2859,
+      "archive_sha256": "2cab7318642e4b3a443a8394e90bdaace58be220be6084ebb8aca90823cd4789",
+      "suites": {
+        "DataAccessCoordinatorTest": {
+          "count": 13,
+          "sha256": "b6827c275ef07c0cc6f90607fe1755c911f4dbf28bd999ecc4c0497fdff7513d"
+        },
+        "RestoreProtocolTest": {
+          "count": 9,
+          "sha256": "8005ed925e57e7131123c07b2104d2a0c48e415d05c902870466be91470d7411"
+        },
+        "RestoreStartupGateTest": {
+          "count": 11,
+          "sha256": "3d021fba06b092843fc3fe056bde062a95f67a233df21ffaaad0f1f861f50493"
+        },
+        "RestoreJournalTest": {
+          "count": 8,
+          "sha256": "f3e8ef3d092d5e4fb05b3c01d1130e493d567cabad08a7c24966ae55deebf1a7"
+        }
+      },
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "linux_enospc": {
+      "artifact": 14998783912,
+      "archive_bytes": 247,
+      "archive_sha256": "e16d8e8eb4d147214a6696494fa592b4f3b9d044f61eb78511a8e440a9529dc5",
+      "log_sha256": "e280cd70ca2f9f91edf2a8e5a41d29cdea7098f4a20ffb7656298ba5cc18e6ae",
+      "result": "PASS"
+    }
+  },
+  "android": {
+    "run": 45564507530,
+    "job": 139035920956,
+    "result": "PASS",
+    "api": 35,
+    "artifact": 14998749333,
+    "archive_bytes": 12616,
+    "archive_sha256": "4c15b42b257cae286f6c492db15515a3bf7315e33e4a7d9914ecfaa0f2e5a57b",
+    "xml_sha256": "b5645169d1b3a568a45a09ebdca135f2adb519b4b0812b21b4ecf835eedf6c58",
+    "counts": {
+      "BackupReliabilityTest": 10,
+      "RestoreFileStorageTest": 30,
+      "RestoreStartupFilesTest": 8
+    },
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "startup_methods": [
+      {
+        "method": "freshStartupCreatesActualSchemasAndStableGeneration",
+        "result": "PASS"
+      },
+      {
+        "method": "historicalPartialPairPreservesExistingRows",
+        "result": "PASS"
+      },
+      {
+        "method": "establishedMissingDatabaseIsNotRecreated",
+        "result": "PASS"
+      },
+      {
+        "method": "orphanSidecarOrInitializationStageBlocksCreation",
+        "result": "PASS"
+      },
+      {
+        "method": "malformedJournalAndLegacyConflictPreserveEvidence",
+        "result": "PASS"
+      },
+      {
+        "method": "v2PendingRecoveredBeforeOpeningActualPair",
+        "result": "PASS"
+      },
+      {
+        "method": "corruptDatabaseIsPreservedAndPartnerNotCreated",
+        "result": "PASS"
+      },
+      {
+        "method": "legacyRemnantsWithoutMarkerRemainBlockedAndUntouched",
+        "result": "PASS"
+      }
+    ],
+    "process_json_sha256": "d93c1c52d434349f1525f8940c56a9f006b2cbae1fe9c28ce9ea70f838901508",
+    "cases": [
+      {
+        "name": "prepared",
+        "phase": "NONE",
+        "killed_pid": 4040,
+        "recovery_pid": 4086,
+        "outcome": "NO_PENDING",
+        "result": "PASS"
+      },
+      {
+        "name": "first-db",
+        "phase": "PENDING",
+        "killed_pid": 4130,
+        "recovery_pid": 4165,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "settings",
+        "phase": "PENDING",
+        "killed_pid": 4199,
+        "recovery_pid": 4281,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "committed",
+        "phase": "COMMITTED",
+        "killed_pid": 4313,
+        "recovery_pid": 4346,
+        "outcome": "NEW_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "rollback",
+        "phase": "PENDING",
+        "killed_pid": 4379,
+        "recovery_pid": 4415,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "rolled-back-cleanup",
+        "phase": "ROLLED_BACK",
+        "killed_pid": 4479,
+        "recovery_pid": 4513,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      }
+    ],
+    "enospc": {
+      "result": "PASS",
+      "capacity_bytes": 8388608,
+      "pid": 4603,
+      "witness_sha256": "651afed502de50da32566bf91b50ab419277428c0dc8393a0fbedcd9730f35ee",
+      "mount_sha256": "873730229eaf5750b9295b903250ac636bb2d3d65b5d9f69761cf196d9c124cb"
+    }
+  },
+  "ordinary_passed": 89,
+  "special_passed": 8,
+  "total_passed": 97,
+  "not_run": 0,
+  "verification": "Computed SHA-256 of three downloaded ZIPs matching GitHub digest; parsed five XML reports, counted 41 JVM and 48 Android without failure/error/skipped nodes; read process JSON, Android mount/witness and Linux log. Both exact CI gates SUCCESS.",
+  "limitations": [
+    "Isolated backend, not Application wiring",
+    "Legacy remnant disposition and v1 migration not covered by tested commit",
+    "Independent restart after ambiguous commit remains untested",
+    "No physical power-loss/device proof"
+  ]
+}

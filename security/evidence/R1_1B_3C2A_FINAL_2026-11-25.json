@@ -1,0 +1,128 @@
+{
+  "stage": "R1.1b-3c-2a",
+  "tested_commit": "d568d2ba4e1c1461d011e93bb1631a73760de924",
+  "gate": "PASS_R1_1B_3C2A_ISOLATED_SCOPE",
+  "build": {
+    "run": 45563831754,
+    "job": 139033678927,
+    "result": "PASS",
+    "jvm": {
+      "artifact": 14999092423,
+      "archive_bytes": 2837,
+      "archive_sha256": "ac6796cd2151b0b9008d06941ea26be266b35b33ff01b2bb8a824ea2f89867ce",
+      "suites": {
+        "DataAccessCoordinatorTest": {
+          "count": 13,
+          "sha256": "3d00d5bbfd58a91ce10ffe52fa3ae6ae26bacda27a7e7c3553f526a680e4cefd"
+        },
+        "RestoreJournalTest": {
+          "count": 8,
+          "sha256": "a87727211817dff8037195cc564bde42bd9ff86b229875fbee0ad50cab36b7b7"
+        },
+        "RestoreProtocolTest": {
+          "count": 9,
+          "sha256": "43382f566aaa88da39238465ed5d332da3908a315d810faeccbe95ab509159af"
+        },
+        "RestoreStartupGateTest": {
+          "count": 11,
+          "sha256": "df28c039575feb35acad6a730cd4438d97b148316fcd16e44ed7b953b9efe32d"
+        }
+      },
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "linux_enospc": {
+      "artifact": 14999122343,
+      "archive_bytes": 247,
+      "archive_sha256": "f425ddfa7c9712c22f6b71561ef84f6f10cc6a3e4fb13388a300b7330b3b7381",
+      "log_sha256": "e280cd70ca2f9f91edf2a8e5a41d29cdea7098f4a20ffb7656298ba5cc18e6ae",
+      "result": "PASS"
+    }
+  },
+  "android": {
+    "run": 45563831719,
+    "job": 139033678514,
+    "result": "PASS",
+    "api": 35,
+    "artifact": 14999680408,
+    "archive_bytes": 12238,
+    "archive_sha256": "ebcb8013e869a647c5c01d0c94c553413caa2c438de9dd273eb66c7144902c51",
+    "xml_sha256": "d8d87bb28d51263cf972ef15d01d176ed131662a719d572bdb8a080e4b6aac69",
+    "counts": {
+      "BackupReliabilityTest": 10,
+      "RestoreFileStorageTest": 30
+    },
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "process_json_sha256": "4d239cb2af83989bd5fe84247ee033a35e0bc30d2e808f99f68d92b3c1bcfaef",
+    "cases": [
+      {
+        "name": "prepared",
+        "phase": "NONE",
+        "killed_pid": 4065,
+        "recovery_pid": 4109,
+        "outcome": "NO_PENDING",
+        "result": "PASS"
+      },
+      {
+        "name": "first-db",
+        "phase": "PENDING",
+        "killed_pid": 4141,
+        "recovery_pid": 4182,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "settings",
+        "phase": "PENDING",
+        "killed_pid": 4218,
+        "recovery_pid": 4253,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "committed",
+        "phase": "COMMITTED",
+        "killed_pid": 4286,
+        "recovery_pid": 4320,
+        "outcome": "NEW_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "rollback",
+        "phase": "PENDING",
+        "killed_pid": 4356,
+        "recovery_pid": 4391,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      },
+      {
+        "name": "rolled-back-cleanup",
+        "phase": "ROLLED_BACK",
+        "killed_pid": 4438,
+        "recovery_pid": 4472,
+        "outcome": "OLD_GENERATION",
+        "result": "PASS"
+      }
+    ],
+    "enospc": {
+      "result": "PASS",
+      "capacity_bytes": 8388608,
+      "pid": 4554,
+      "witness_sha256": "8e2aa76cc377d36ea698d158180b9ff45cba1589345eeddb6dfa557a5f6b7411",
+      "mount_sha256": "873730229eaf5750b9295b903250ac636bb2d3d65b5d9f69761cf196d9c124cb"
+    }
+  },
+  "ordinary_passed": 81,
+  "special_passed": 8,
+  "total_passed": 89,
+  "not_run": 0,
+  "verification": "Downloaded all 3 ZIPs, computed SHA-256 matching GitHub digests; parsed five XML reports, 81 cases without failure/error/skipped nodes; process JSON, Linux log, Android mount/witness checked; CI exact gates successful.",
+  "limitations": [
+    "Startup policy model only, no Application wiring",
+    "False commit tests simulate cached change; independent false-commit restart not yet tested",
+    "Physical power loss/flash failure not proved"
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "stage": "R1.1b-1 / R1.1b-2a",
+  "tested_commit": "5cbf60746cc4eb7276c264fb66c3ee3b00fed210",
+  "run_id": 45537467265,
+  "job_id": 138947490270,
+  "artifact_id": 14986844104,
+  "archive_sha256": "7ecead3433d25009fdd7e3099a7cf54597b8c094f0892e6041912a1873dbe770",
+  "archive_bytes": 1324,
+  "environment": "GitHub runner JVM; actual temporary files; not Android runtime",
+  "tests": 17,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "suites": [
+    {
+      "name": "RestoreJournalTest",
+      "xml_sha256": "3d09bb0110f26acba470e9e74309835c77d11f95a4d08b7251fa6ad080e4461f",
+      "cases": [
+        "missingDirectoryIsNotAnEmptyJournal",
+        "commitSurvivesReopenAndClearsOnlyTerminal",
+        "oversizedOrNonRegularJournalFailsClosed",
+        "wrongGenerationOrHashesCannotPublishOrClear",
+        "damagedJournalIsNotTreatedAsMissing",
+        "rollbackTerminalSurvivesReopen",
+        "orphanTemporaryDoesNotOverrideAuthoritativeJournal",
+        "invalidTransitionsDoNotChangeJournal"
+      ]
+    },
+    {
+      "name": "RestoreProtocolTest",
+      "xml_sha256": "734cf5a9d41c4e72eb2543492673061f1e3330078330d8d6dcf980c97a8ea3eb",
+      "cases": [
+        "pendingRestoreRejectsAnotherRestoreWithoutWriting",
+        "settingsCommitFailureDoesNotCommitDatabases",
+        "corruptCommittedGenerationDoesNotCleanupOrRollback",
+        "successfulRestoreCommitsAllThreeAndClearsJournal",
+        "repeatedInterruptionDuringRollbackIsRecoverable",
+        "beforeAndAfterEveryRestoreBoundaryRecoversCorrectGeneration",
+        "committedCleanupFailureNeverRollsBack",
+        "missingRollbackCopiesRemainPending",
+        "corruptJournalFailsClosed"
+      ]
+    }
+  ],
+  "gate": "PASS_JVM_SCOPE_ONLY"
+}

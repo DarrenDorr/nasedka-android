@@ -60,6 +60,53 @@ jobs:
           fi
       - name: Test and build all three debug variants
         run: gradle --no-daemon testGithubDebugUnitTest assembleGithubDebug assemblePlayDebug assembleRustoreDebug assembleGithubDebugAndroidTest
+      - name: Verify R1 restore JVM test evidence
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          root = Path("app/build/test-results/testGithubDebugUnitTest")
+          required = {
+              "RestoreProtocolTest": ["successfulRestoreCommitsAllThreeAndClearsJournal","beforeAndAfterEveryRestoreBoundaryRecoversCorrectGeneration","repeatedInterruptionDuringRollbackIsRecoverable","settingsCommitFailureDoesNotCommitDatabases","pendingRestoreRejectsAnotherRestoreWithoutWriting","corruptJournalFailsClosed","missingRollbackCopiesRemainPending","corruptCommittedGenerationDoesNotCleanupOrRollback","committedCleanupFailureNeverRollsBack"],
+              "RestoreStartupGateTest": ["freshInstallInitializesPairBeforeGeneration","oldPartialPairCanInitializeOnlyMissingFile","establishedPartialPairCannotCreateReplacement","orphanRestoreArtifactsBlockPartialInitialization","existingGenerationIsNotReissued","v2RecoveryPrecedesAnyGenerationRead","conflictingJournalsAndUnclassifiedLegacyRemnantsBlock","legacyRecoveryMustResolveMarkerAndClassifyRemnants","failedRecoveryOrValidationNeverPublishesReady","generationCommitFailureNeverPublishesReady","admissionRejectsBusyOrAlreadyReadyWithoutBackendCalls"],
+              "DataAccessCoordinatorTest": ["startupAndUnresolvedRecoveryBlockOrdinaryAccess","concurrentShortRejectsOtherThreadWithoutWaiting","reservationRaceAdmitsExactlyOneHeavyOperation","nestedShortIsLifoAndCannotUpgrade","foreignThreadCannotReleaseOrUseLease","ticketTransferredAndClaimedOnlyOnce","cancellationRestoresOnlyOriginalUnclaimedState","cancellationAndClaimRaceCannotReleaseActiveWork","shortAndSnapshotExceptionsReleaseButRestoreFailsClosed","workerOwnershipSurvivesInitiatingThreadExit","oldLeaseDoubleCloseCannotReleaseNewOperation","staleTokenRejectedAfterRestoreAndRollbackEvenWithSameUuid","tokenAdmissionIsAtomicAgainstRestoreReservation"],
+              "RestoreJournalTest": ["commitSurvivesReopenAndClearsOnlyTerminal","rollbackTerminalSurvivesReopen","wrongGenerationOrHashesCannotPublishOrClear","invalidTransitionsDoNotChangeJournal","damagedJournalIsNotTreatedAsMissing","orphanTemporaryDoesNotOverrideAuthoritativeJournal","oversizedOrNonRegularJournalFailsClosed","missingDirectoryIsNotAnEmptyJournal"],
+          }
+          for suite, names in required.items():
+              report = ET.parse(root / ("TEST-org.nasedka.app." + suite + ".xml")).getroot()
+              cases = report.findall("testcase")
+              assert len(cases) == len(names), f"{suite}: wrong test count"
+              assert {c.get("name") for c in cases} == set(names), f"{suite}: missing/unexpected methods"
+              assert all(c.get("classname") == "org.nasedka.app." + suite for c in cases)
+              assert all(int(report.get(k, "-1")) == 0 for k in ("failures", "errors", "skipped"))
+              assert not any(c.find(k) is not None for c in cases for k in ("failure", "error", "skipped"))
+              print(f"{suite}: {len(cases)} executed, 0 failures/errors/skipped")
+          PY
+      - name: Execute real bounded filesystem ENOSPC probe (Linux)
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/r1/enospc.sh 2>&1 | tee "$RUNNER_TEMP/r1-enospc.log"
+          grep -Fx 'R1 bounded Linux tmpfs ENOSPC: PASS' "$RUNNER_TEMP/r1-enospc.log"
+      - name: Preserve bounded filesystem probe
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r1-enospc-evidence
+          path: ${{ runner.temp }}/r1-enospc.log
+          retention-days: 3
+          if-no-files-found: warn
+      - name: Preserve R1 restore JVM reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r1-restore-jvm-evidence
+          path: |
+            app/build/test-results/testGithubDebugUnitTest/TEST-org.nasedka.app.Restore*Test.xml
+            app/build/test-results/testGithubDebugUnitTest/TEST-org.nasedka.app.DataAccessCoordinatorTest.xml
+          retention-days: 3
+          if-no-files-found: warn
       - name: Save GitHub APK for installation tests
         uses: actions/upload-artifact@v4
         with:
