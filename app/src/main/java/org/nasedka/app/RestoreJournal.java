@@ -18,8 +18,15 @@ final class RestoreJournal {
     private static final String HEADER = "NASEDKA_RESTORE_V2";
     private static final int LIMIT = 1024;
     private final Path directory, live, temporary;
+    // Package-private fault seam; production always calls the real directory force.
+    interface DirectorySync { void force(Path directory) throws IOException; }
+    private final DirectorySync directorySync;
 
     RestoreJournal(Path privateDirectory) throws IOException {
+        this(privateDirectory,RestoreFileStorage::sync);
+    }
+    RestoreJournal(Path privateDirectory,DirectorySync directorySync) throws IOException {
+        this.directorySync=java.util.Objects.requireNonNull(directorySync);
         directory = privateDirectory.toAbsolutePath().normalize();
         checkDirectory();
         live = directory.resolve("restore-v2.journal");
@@ -122,6 +129,37 @@ final class RestoreJournal {
         syncDirectory();
     }
 
+    /**
+     * Visibility after rename is not durability. Before deleting any rollback
+     * copies, re-force the exact terminal record and its directory. A failed
+     * force leaves cleanup forbidden, even after reopening the adapter.
+     */
+    void confirmTerminal(Entry expected) throws IOException {
+        if(expected==null || (expected.phase!=RestoreProtocol.Phase.COMMITTED
+                && expected.phase!=RestoreProtocol.Phase.ROLLED_BACK))
+            throw new IOException("Not a terminal journal");
+        requireSame(expected);
+        try(FileChannel channel=FileChannel.open(live,StandardOpenOption.WRITE,LinkOption.NOFOLLOW_LINKS)){
+            channel.force(true);
+        }
+        syncDirectory();
+        requireSame(expected);
+    }
+    private void requireSame(Entry expected)throws IOException {
+        Entry current=read();
+        if(current==null || current.phase!=expected.phase || !current.sameGeneration(expected))
+            throw new IOException("Restore journal changed");
+    }
+
+    // After an ambiguous unlink/force failure, a visible NONE is not enough.
+    // Caller holds the operation barrier; do not permit new live writes until
+    // the absent journal directory entry has been synchronized.
+    void confirmAbsent()throws IOException {
+        if(read()!=null)throw new IOException("Restore journal present");
+        syncDirectory();
+        if(read()!=null)throw new IOException("Restore journal appeared");
+    }
+
     private void discardTemporary() throws IOException {
         try {
             BasicFileAttributes a = Files.readAttributes(temporary, BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
@@ -134,9 +172,8 @@ final class RestoreJournal {
             throw new IOException("Restore journal directory unavailable");
     }
     private void syncDirectory() throws IOException {
-        try (FileChannel channel = FileChannel.open(directory, StandardOpenOption.READ)) {
-            channel.force(true);
-        }
+        checkDirectory();
+        directorySync.force(directory);
     }
     private static byte[] encode(Entry entry) {
         StringBuilder body = new StringBuilder(HEADER).append('\n')

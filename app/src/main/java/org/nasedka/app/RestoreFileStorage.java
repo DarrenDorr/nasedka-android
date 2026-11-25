@@ -43,6 +43,10 @@ final class RestoreFileStorage implements RestoreProtocol.Storage {
         this(root,settings,targetSettings,path->path.toFile().getUsableSpace());
     }
     RestoreFileStorage(Path root, SettingsPort settings, byte[] targetSettings,SpaceProbe space) throws IOException {
+        this(root,settings,targetSettings,space,RestoreFileStorage::sync);
+    }
+    RestoreFileStorage(Path root, SettingsPort settings, byte[] targetSettings,SpaceProbe space,
+                       RestoreJournal.DirectorySync journalSync) throws IOException {
         this.space=java.util.Objects.requireNonNull(space);
         this.root = root.toAbsolutePath().normalize();
         this.work = this.root.resolve(WORK);
@@ -52,14 +56,21 @@ final class RestoreFileStorage implements RestoreProtocol.Storage {
         this.live = new Path[]{this.root.resolve("incuba.db"), this.root.resolve("nasedka_farm.db")};
         this.old = new Path[]{work.resolve("old-inc.db"),work.resolve("old-farm.db"),work.resolve("old-prefs.bin")};
         this.staged = new Path[]{work.resolve("new-inc.db"),work.resolve("new-farm.db"),work.resolve("new-prefs.bin")};
-        this.journal = new RestoreJournal(work);
+        this.journal = new RestoreJournal(work,journalSync);
     }
 
     @Override public Phase readPhase() throws IOException {
         if (exists(root.resolve(".nasedka_restore_pending")))
             throw new IOException("Legacy recovery required before v2");
         RestoreJournal.Entry e = journal.read();
-        return e == null ? Phase.NONE : e.phase;
+        if(e!=null)return e.phase;
+        // Also persist the root's directory entries (work directory and any
+        // previously removed legacy marker) before allowing a new operation.
+        sync(root);
+        journal.confirmAbsent();
+        if(exists(root.resolve(".nasedka_restore_pending")))
+            throw new IOException("Legacy recovery required before v2");
+        return Phase.NONE;
     }
 
     @Override public void prepare() throws IOException {
@@ -150,6 +161,9 @@ final class RestoreFileStorage implements RestoreProtocol.Storage {
     @Override public void cleanup(Phase terminal) throws IOException {
         if(terminal!=Phase.COMMITTED && terminal!=Phase.ROLLED_BACK)throw new IOException("Not terminal");
         RestoreJournal.Entry e=entry(terminal);verify(e,terminal==Phase.COMMITTED);
+        // A previous publish may have thrown after atomic rename but before
+        // directory force. Never consume rollback sources on visibility alone.
+        journal.confirmTerminal(e);
         for(Path path:old) removeOwned(path);
         for(Path path:staged) removeOwned(path);
         removeOwned(work.resolve(INCOMING_INC)); removeOwned(work.resolve(INCOMING_FARM));

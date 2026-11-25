@@ -311,4 +311,66 @@ public class RestoreFileStorageTest {
         assertTrue(Files.exists(work.resolve("old-inc.db")));assertTrue(Files.exists(work.resolve("old-farm.db")));
         assertEquals(OLD_GENERATION,new RestoreProtocol(storage(null)).recover());assertGeneration(false);
     }
+
+    // Inject failure of the directory-force call, not a physical disk fault.
+    // Every non-failing invocation performs the original real force.
+    private static final class JournalForceFault implements RestoreJournal.DirectorySync {
+        boolean armed;
+        int failures;
+        @Override public void force(Path directory)throws IOException {
+            if(armed){armed=false;failures++;throw new IOException("Injected journal directory force failure");}
+            RestoreFileStorage.sync(directory);
+        }
+    }
+    private RestoreFileStorage faultStorage(byte[] target,JournalForceFault fault)throws IOException{
+        return new RestoreFileStorage(root,port,target,p->p.toFile().getUsableSpace(),fault);
+    }
+    private void assertRollbackCopiesPresent(){
+        for(String name:new String[]{"old-inc.db","old-farm.db","old-prefs.bin","new-inc.db","new-farm.db","new-prefs.bin"})
+            assertTrue("Missing source "+name,Files.isRegularFile(work.resolve(name)));
+    }
+    private static void forceRejected(Checked action,JournalForceFault fault)throws Exception{
+        int before=fault.failures;fault.armed=true;
+        try{action.run();fail("Expected directory force failure");}
+        catch(IOException e){assertEquals("Injected journal directory force failure",e.getMessage());}
+        assertEquals(before+1,fault.failures);assertFalse(fault.armed);
+    }
+
+    @Test public void ambiguousCommittedForceRetainsCopiesUntilResynced()throws Exception{
+        JournalForceFault fault=new JournalForceFault();
+        RestoreFileStorage s=faultStorage(newSettings,fault);
+        s.prepare();s.publish(NONE,PENDING);s.applyIncubation();s.applyFarm();s.applySettings();
+        forceRejected(()->s.publish(PENDING,COMMITTED),fault);
+        assertEquals(COMMITTED,s.readPhase());assertRollbackCopiesPresent();
+        RestoreFileStorage restarted=faultStorage(null,fault);
+        forceRejected(()->new RestoreProtocol(restarted).recover(),fault);
+        assertEquals(COMMITTED,restarted.readPhase());assertRollbackCopiesPresent();
+        assertEquals(NEW_GENERATION,new RestoreProtocol(faultStorage(null,fault)).recover());
+        assertEquals(NONE,storage(null).readPhase());assertGeneration(true);
+    }
+
+    @Test public void ambiguousRolledBackForceRetainsCopiesUntilResynced()throws Exception{
+        JournalForceFault fault=new JournalForceFault();
+        RestoreFileStorage s=faultStorage(newSettings,fault);
+        s.prepare();s.publish(NONE,PENDING);s.applyIncubation();s.applyFarm();s.applySettings();
+        s.rollbackIncubation();s.rollbackFarm();s.rollbackSettings();
+        forceRejected(()->s.publish(PENDING,ROLLED_BACK),fault);
+        assertEquals(ROLLED_BACK,s.readPhase());assertRollbackCopiesPresent();
+        forceRejected(()->new RestoreProtocol(faultStorage(null,fault)).recover(),fault);
+        assertRollbackCopiesPresent();
+        assertEquals(OLD_GENERATION,new RestoreProtocol(faultStorage(null,fault)).recover());
+        assertEquals(NONE,storage(null).readPhase());assertGeneration(false);
+    }
+
+    @Test public void ambiguousJournalRemovalRequiresDurableAbsence()throws Exception{
+        JournalForceFault fault=new JournalForceFault();
+        RestoreFileStorage s=faultStorage(newSettings,fault);
+        s.prepare();s.publish(NONE,PENDING);s.applyIncubation();s.applyFarm();s.applySettings();
+        s.publish(PENDING,COMMITTED);s.cleanup(COMMITTED);
+        forceRejected(()->s.clear(COMMITTED),fault);
+        assertFalse(Files.exists(work.resolve("restore-v2.journal")));
+        forceRejected(()->new RestoreProtocol(faultStorage(null,fault)).recover(),fault);
+        assertEquals(NO_PENDING,new RestoreProtocol(faultStorage(null,fault)).recover());
+        assertGeneration(true);
+    }
 }

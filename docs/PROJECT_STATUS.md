@@ -58,7 +58,11 @@
 
 **Android ENOSPC — новая проверка:** отдельный CI-only tmpfs 8 MiB внутри disposable emulator, root только для provisioning, SELinux Enforcing, st_dev/capacity guards, настоящая ошибка записи Android и rollback после освобождения места. Инфраструктура ещё NOT_RUN; если root/mount/SELinux/namespace блокирует, сохранить точную причину, не ослаблять защиту и не заполнять /data.
 
-**СЛЕДУЮЩИЙ конкретный шаг:** проверить 46 ordinary + 6 actual kill/restart + Linux ENOSPC + Android ENOSPC (54 проверки), затем финальный аудит -2b. HOLD, -3 не начинать, production wiring не выполнен. Дизайн не менять. Полный SAF, конкурентность, crash recovery и реальное обновление остаются в последующих испытаниях R1. 
+**R1.1b-2b 54/54 PASS в проверенном объёме:** commit `fe2da619baaa03a6af2543cdfa2d3831439f39c5`, [build 45547940828](https://github.com/DarrenDorr/nasedka-android/actions/runs/45547940828) и [Android 45547940810](https://github.com/DarrenDorr/nasedka-android/actions/runs/45547940810) SUCCESS. 17 JVM + 29 Android + 6 real process death + Linux/Android ENOSPC. Три ZIP SHA-256, XML, JSON и mount/witness подтверждены. [Evidence](../security/evidence/R1_1B_ANDROID_ENOSPC_2026-11-25.json).
+
+**Аудит -2b: R1B-A01 — исправление durability gate:** видимый terminal journal после rename при ошибке directory force не гарантирует устойчивость к power loss; теперь обязательный confirmTerminal до cleanup. R1B-A02 — видимое NONE после неоднозначного unlink требует синхронизации каталога до открытия доступа. 3 Android теста с injected directory-force IOException на реальных файлах; реальные физические ошибки fsync не имитируются ОС. [Отчёт](R1_1B_DURABILITY_AUDIT_2026-11-25.md). Новая редакция NOT_RUN.
+
+**СЛЕДУЮЩИЙ конкретный шаг:** проверить 17 JVM + 32 Android + 6 kill/restart + Linux/Android ENOSPC = 57 проверок, сохранить evidence, завершить аудит. HOLD, -3 не начинать, production wiring не выполнен. Дизайн не менять. Полный SAF, конкурентность, crash recovery и реальное обновление остаются в последующих испытаниях R1. 
 
 **ПЛАН РЕАЛИЗАЦИИ (только по отдельному согласию на изменение приложения):** R1 — тесты резервных копий, миграций, фоновых уведомлений и сохранения черновиков; R2 — перенос точного визуального каркаса (4 кнопки и Главная); R3 — связанный учёт яиц, единый журнал и история исправлений. Не возвращаться к созданию нового дизайна без запроса.
 
