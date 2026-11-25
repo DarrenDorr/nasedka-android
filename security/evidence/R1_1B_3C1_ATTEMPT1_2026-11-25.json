@@ -1,0 +1,92 @@
+{
+  "stage": "R1.1b-3c-1 attempt 1",
+  "tested_commit": "5f50a5b1f36bb1fc41f987eccb6b7c99ad58823f",
+  "gate": "HOLD",
+  "build": {
+    "run": 45559829351,
+    "job": 139020604270,
+    "result": "PASS",
+    "jvm": {
+      "artifact": 14997183482,
+      "archive_bytes": 2130,
+      "archive_sha256": "b1f3c7d9d07be0ad533b32da0ef1287b31c220f6e2a44704ba7e61edb6eb904e",
+      "suites": {
+        "RestoreJournalTest": {
+          "count": 8,
+          "sha256": "531f718895929d4e26c17c50838110a718103b0443ed2ee3690391c22bfff0d6"
+        },
+        "RestoreProtocolTest": {
+          "count": 9,
+          "sha256": "7e62b0416052b05fb3290ffb725f5926650374f291b14f5ea7afa3a1453d511e"
+        },
+        "DataAccessCoordinatorTest": {
+          "count": 13,
+          "sha256": "227c838b11704186b14b57be776186663473258629d79c8a23e10e2ab2a9395e"
+        }
+      },
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "linux_enospc": {
+      "artifact": 14996734116,
+      "archive_bytes": 247,
+      "archive_sha256": "c9cca9c87c738a0d5a99c60cc80a2a498316d4f2f15f2f6d06218f546573a612",
+      "log_sha256": "e280cd70ca2f9f91edf2a8e5a41d29cdea7098f4a20ffb7656298ba5cc18e6ae",
+      "result": "PASS"
+    }
+  },
+  "android": {
+    "run": 45559829394,
+    "job": 139020604568,
+    "api": 35,
+    "result": "FAIL",
+    "artifact": 14997467969,
+    "archive_bytes": 5984,
+    "archive_sha256": "bfc8b08cd8ec3a10cd8900aabcecc687ba32b8a57b1be9dc8402aadbf42208ad",
+    "xml_sha256": "1cee80b31d7d675ca4eb826434c189253290d0555d4a59aee38503155554824c",
+    "ordinary": {
+      "BackupReliabilityTest": {
+        "passed": 10,
+        "failed": 0
+      },
+      "RestoreFileStorageTest": {
+        "passed": 26,
+        "failed": 1
+      },
+      "errors": 0,
+      "skipped": 0
+    },
+    "failed_method": "generationCommitAndRollbackPreserveCorrectUuid",
+    "exception": "java.nio.file.NoSuchFileException: restore-v2/incoming-inc.db",
+    "stack": [
+      "RestoreFileStorage.regular:191",
+      "RestoreFileStorage.checkSpace:208",
+      "RestoreFileStorage.prepare:84",
+      "RestoreProtocol.restore:58",
+      "RestoreFileStorageTest.generationCommitAndRollbackPreserveCorrectUuid:395"
+    ],
+    "analysis": "First rollback completed and old generation assertions passed. Existing cleanup deliberately deletes incoming-inc.db and incoming-farm.db. Second restore in test did not stage inputs again. Failure occurred before second PENDING. Successful commit half not proved by this test.",
+    "other_new_methods": {
+      "legacySettingsEncodingRemainsByteIdenticalAndRemovesGeneration": "PASS",
+      "malformedGenerationAndUnknownVersionRejectWithoutMutation": "PASS",
+      "targetGenerationIgnoresImportedUuidAndSchedulerState": "PASS",
+      "generationTokenChangesOnlyAfterVerifiedRestoreOutcome": "PASS"
+    },
+    "process_death": {
+      "planned": 6,
+      "result": "NOT_RUN"
+    },
+    "bounded_android_enospc": {
+      "planned": 1,
+      "result": "NOT_RUN"
+    },
+    "note": "Gradle ordinary test failure stopped execution before special cases. Their mandatory evidence gates failed due to absent reports, not failed execution of the scenarios."
+  },
+  "passed": 67,
+  "failed": 1,
+  "not_run": 7,
+  "total_planned": 75,
+  "verification": "Independently computed SHA-256 of 3 downloaded ZIP archives matching GitHub digests; parsed four XML files, read Linux ENOSPC log and failure stack. Prior 70/70 baseline remains historical only.",
+  "fix": "Re-stage both isolated SQLite input fixtures after successful rollback; assert NONE and absence of consumed inputs before second restore, and NONE/absence after commit. No production or CI gate change."
+}

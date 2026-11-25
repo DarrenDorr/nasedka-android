@@ -392,8 +392,18 @@ public class RestoreFileStorageTest {
         assertEquals(GEN_NEW,port.generation());
         assertEquals(OLD_GENERATION,new RestoreProtocol(storage(null)).recover());
         assertEquals(GEN_OLD,new RestoreSettingsPort(prefs).generation());assertGeneration(false);
+        // A terminal rollback intentionally consumes the staging inputs.
+        // A second independent restore must supply its own prepared SQLite pair.
+        assertEquals(NONE,storage(null).readPhase());
+        assertFalse(Files.exists(work.resolve(RestoreFileStorage.INCOMING_INC)));
+        assertFalse(Files.exists(work.resolve(RestoreFileStorage.INCOMING_FARM)));
+        db(work.resolve(RestoreFileStorage.INCOMING_INC),"new-inc");
+        db(work.resolve(RestoreFileStorage.INCOMING_FARM),"new-farm");
         assertEquals(NEW_GENERATION,new RestoreProtocol(storage(newSettings)).restore());
         assertEquals(GEN_NEW,new RestoreSettingsPort(prefs).generation());assertGeneration(true);
+        assertEquals(NONE,storage(null).readPhase());
+        assertFalse(Files.exists(work.resolve(RestoreFileStorage.INCOMING_INC)));
+        assertFalse(Files.exists(work.resolve(RestoreFileStorage.INCOMING_FARM)));
     }
 
     @Test public void legacySettingsEncodingRemainsByteIdenticalAndRemovesGeneration()throws Exception {
