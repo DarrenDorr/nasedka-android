@@ -82,7 +82,7 @@ public final class BackupStore {
         }
         return rows;
     }
-    private static JSONObject all(SQLiteDatabase db,String[] tables) throws Exception {
+    static JSONObject all(SQLiteDatabase db,String[] tables) throws Exception {
         JSONObject out=new JSONObject();
         for(String table:tables)out.put(table,data(db,table));
         return out;
@@ -135,7 +135,7 @@ public final class BackupStore {
         if(s==null||s.length()>max)throw new IllegalArgumentException("Некорректное поле "+key);
         return s;
     }
-    private static void validate(JSONObject root) throws Exception {
+    static void validate(JSONObject root) throws Exception {
         if(!FORMAT.equals(root.optString("format"))||root.optInt("version")!=VERSION
                 ||root.optInt("incuba_version")!=2
                 ||(root.optInt("farm_version")!=1&&root.optInt("farm_version")!=2))
@@ -143,7 +143,11 @@ public final class BackupStore {
         JSONObject inc=root.getJSONObject("incubation"),farm=root.getJSONObject("farm");
         for(String t:INCUBATION)if(inc.getJSONArray(t).length()>100000)
             throw new IllegalArgumentException("Слишком много записей в "+t);
-        for(String t:FARM)if((farm.optJSONArray(t)==null?0:farm.getJSONArray(t).length())>100000)
+        // Only the historical farm v1 format may omit flock_notes. A present
+        // null/non-array is invalid even in v1, and v2 must include the table.
+        if(root.getInt("farm_version")==1 && !farm.has("flock_notes"))
+            farm.put("flock_notes",new JSONArray());
+        for(String t:FARM)if(farm.getJSONArray(t).length()>100000)
             throw new IllegalArgumentException("Слишком много записей в "+t);
         JSONObject prefs=root.getJSONObject("settings");
         Prefs.times(string(prefs,"checks",100));Prefs.times(string(prefs,"turns",100));
@@ -189,17 +193,14 @@ public final class BackupStore {
             db.insertOrThrow(table,null,values);
         }
     }
-    private static void populate(SQLiteDatabase db,JSONObject data,String[] tables,int version)
+    static void populate(SQLiteDatabase db,JSONObject data,String[] tables,int version)
             throws Exception {
         db.beginTransaction();
         try {
             for(String t:tables) {
-                JSONArray rows=data.optJSONArray(t);
-                if(rows==null) {
-                    if("flock_notes".equals(t))rows=new JSONArray();
-                    else throw new IllegalArgumentException("Нет обязательной таблицы "+t);
-                }
-                importTable(db,t,rows);
+                // validate() normalizes the one permitted legacy omission.
+                // Never silently invent a missing table during staging.
+                importTable(db,t,data.getJSONArray(t));
             }
             db.setVersion(version);db.setTransactionSuccessful();
         }finally{db.endTransaction();}
@@ -211,7 +212,7 @@ public final class BackupStore {
     private static long count(SQLiteDatabase db,String query) {
         try(Cursor c=db.rawQuery(query,null)){c.moveToFirst();return c.getLong(0);}
     }
-    private static void relations(SQLiteDatabase inc,SQLiteDatabase farm) {
+    static void relations(SQLiteDatabase inc,SQLiteDatabase farm) {
         String[] checks={
             "SELECT COUNT(*) FROM entries WHERE batch_id NOT IN (SELECT id FROM batches)",
             "SELECT COUNT(*) FROM done WHERE batch_id NOT IN (SELECT id FROM batches)"};
@@ -223,6 +224,7 @@ public final class BackupStore {
             "SELECT COUNT(*) FROM feed_moves WHERE feed_id NOT IN (SELECT id FROM feeds)",
             "SELECT COUNT(*) FROM nest_notes WHERE nest_id NOT IN (SELECT id FROM nests)",
             "SELECT COUNT(*) FROM egg_harvest WHERE flock_id NOT IN (SELECT id FROM flock)",
+            "SELECT COUNT(*) FROM incubator_transfers WHERE flock_id NOT IN (SELECT id FROM flock) OR quantity<=0",
             "SELECT COUNT(*) FROM finances WHERE feed_move_id IS NOT NULL AND feed_move_id NOT IN (SELECT id FROM feed_moves)",
             "SELECT COUNT(*) FROM flock_moves WHERE delta=0",
             "SELECT COUNT(*) FROM feeds WHERE name=''",
